@@ -6,6 +6,10 @@ inputs:
   path-glob:
     description: "A glob for matching artifact files"
     required: true
+  upload:
+    description: "Upload the artifacts instead of just validating them"
+    required: true
+    default: false
 runs:
   using: "docker"
   image: "Dockerfile"
