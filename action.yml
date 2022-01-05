@@ -1,0 +1,11 @@
+name: "Upload artifacts to Web3.Storage"
+inputs:
+  w3s-token:
+    description: "The secret API token for web3.storage"
+    required: true
+  path-glob:
+    description: "A glob for matching artifact files"
+    required: true
+runs:
+  using: "docker"
+  image: "Dockerfile"
