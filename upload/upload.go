@@ -53,17 +53,17 @@ func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) erro
 		return err
 	}
 
-	for _, id := range cidList {
+	for _, currentCid := range cidList {
 		// We need to check if content already exists in Web3.Storage before we
 		// store it again, but we should compare CIDs by their multihash rather
 		// than directly so that a CIDv0 and a CIDv1 aren't detected as
 		// different contents.
-		if _, exists := existingCids[contentKeyFromCid(id)]; exists {
-			fmt.Printf("Skipping previously archived content: %s\n", id.String())
+		if _, exists := existingCids[contentKeyFromCid(currentCid)]; exists {
+			fmt.Printf("Skipping previously archived content: %s\n", currentCid.String())
 			continue
 		}
 
-		car, err := PackCar(ctx, ipfsClient, id)
+		car, err := PackCar(ctx, ipfsClient, currentCid)
 		if err != nil {
 			return err
 		}
