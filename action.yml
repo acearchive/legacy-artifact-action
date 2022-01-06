@@ -1,18 +1,18 @@
 name: "Upload artifacts to Web3.Storage"
 inputs:
-  w3s-token:
-    description: "The secret API token for web3.storage"
-    required: true
   path-glob:
     description: "A glob for matching artifact files"
     required: true
+  w3s-token:
+    description: "The secret API token for web3.storage"
+    required: false
+  ipfs-api:
+    description: "The multiaddr of the API endpoint of the running IPFS node"
+    required: false
   upload:
     description: "Upload the artifacts instead of just validating them"
     required: true
     default: "false"
-  ipfs-api:
-    description: "The multiaddr of the API endpoint of the running IPFS node"
-    required: false
 runs:
   using: "docker"
   image: "Dockerfile"
