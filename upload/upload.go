@@ -12,7 +12,7 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struc
 		return nil, err
 	}
 
-	var cidSet map[cid.Cid]struct{}
+	var cidSet = make(map[cid.Cid]struct{})
 
 	for {
 		status, err := iter.Next()

@@ -3,6 +3,21 @@ module github.com/frawleyskid/w3s-upload
 go 1.17
 
 require (
+	github.com/ipfs/go-blockservice v0.2.1
+	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-datastore v0.5.1
+	github.com/ipfs/go-ds-flatfs v0.5.1
+	github.com/ipfs/go-ipfs-blockstore v1.1.2
+	github.com/ipfs/go-ipfs-chunker v0.0.5
+	github.com/ipfs/go-ipfs-exchange-offline v0.1.1
+	github.com/ipfs/go-ipld-format v0.2.0
+	github.com/ipfs/go-merkledag v0.5.1
+	github.com/ipfs/go-unixfs v0.3.1
+	github.com/ipld/go-car v0.3.3
+	github.com/web3-storage/go-w3s-client v0.0.5
+)
+
+require (
 	github.com/Stebalien/go-bitfield v0.0.1 // indirect
 	github.com/alanshaw/go-carbites v0.5.0 // indirect
 	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
@@ -19,32 +34,22 @@ require (
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/go-bitfield v1.0.0 // indirect
 	github.com/ipfs/go-block-format v0.0.3 // indirect
-	github.com/ipfs/go-blockservice v0.2.1 // indirect
-	github.com/ipfs/go-cid v0.1.0 // indirect
-	github.com/ipfs/go-datastore v0.5.1 // indirect
-	github.com/ipfs/go-ds-flatfs v0.5.1 // indirect
 	github.com/ipfs/go-fetcher v1.6.1 // indirect
-	github.com/ipfs/go-ipfs-blockstore v1.1.2 // indirect
-	github.com/ipfs/go-ipfs-chunker v0.0.5 // indirect
 	github.com/ipfs/go-ipfs-ds-help v1.1.0 // indirect
 	github.com/ipfs/go-ipfs-exchange-interface v0.1.0 // indirect
 	github.com/ipfs/go-ipfs-files v0.0.9 // indirect
 	github.com/ipfs/go-ipfs-posinfo v0.0.1 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipld-cbor v0.0.6 // indirect
-	github.com/ipfs/go-ipld-format v0.2.0 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.3.0 // indirect
-	github.com/ipfs/go-merkledag v0.5.1 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/ipfs/go-mfs v0.2.1 // indirect
 	github.com/ipfs/go-path v0.2.1 // indirect
-	github.com/ipfs/go-unixfs v0.3.1 // indirect
 	github.com/ipfs/go-unixfsnode v1.1.3 // indirect
 	github.com/ipfs/go-verifcid v0.0.1 // indirect
 	github.com/ipfs/ipfs-cluster v0.14.2 // indirect
-	github.com/ipld/go-car v0.3.3 // indirect
 	github.com/ipld/go-car/v2 v2.1.1 // indirect
 	github.com/ipld/go-codec-dagpb v1.3.0 // indirect
 	github.com/ipld/go-ipld-prime v0.14.3 // indirect
@@ -78,7 +83,6 @@ require (
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
-	github.com/web3-storage/go-w3s-client v0.0.5 // indirect
 	github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210303213153-67a261a1d291 // indirect
 	github.com/whyrusleeping/chunker v0.0.0-20181014151217-fe64bd25879f // indirect
