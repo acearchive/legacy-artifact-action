@@ -28,7 +28,7 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struc
 	return cidSet, nil
 }
 
-func UploadContent(ctx context.Context, token string, cidList []cid.Cid) error {
+func Content(ctx context.Context, token string, cidList []cid.Cid) error {
 	service, err := NewLocalService()
 	if err != nil {
 		return err

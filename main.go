@@ -16,7 +16,7 @@ func run() error {
 	pathGlob := os.Getenv("INPUT_PATH_GLOB")
 	uploadContent := os.Getenv("INPUT_UPLOAD")
 
-	cidList, err := parse.ParseArtifactFiles(workspacePath, pathGlob)
+	cidList, err := parse.ArtifactFiles(workspacePath, pathGlob)
 	if err != nil {
 		return err
 	}
@@ -25,12 +25,11 @@ func run() error {
 		return nil
 	}
 
-	return upload.UploadContent(ctx, w3sToken, cidList)
+	return upload.Content(ctx, w3sToken, cidList)
 }
 
 func main() {
-	err := run()
-	if err != nil {
+	if err := run(); err != nil {
 		fmt.Printf("::error::%s\n", err.Error())
 		os.Exit(1)
 	}

@@ -65,6 +65,7 @@ findStart:
 
 	for {
 		scanner.Scan()
+
 		if scanner.Err() != nil {
 			return "", err
 		}
@@ -97,19 +98,19 @@ func extractArtifactCids(frontMatter string) ([]cid.Cid, error) {
 
 	cidList := make([]cid.Cid, len(artifact.Files))
 
-	for i, artifactFile := range artifact.Files {
+	for fileIndex, artifactFile := range artifact.Files {
 		artifactCid, err := cid.Parse(artifactFile.Cid)
 		if err != nil {
 			return nil, err
 		}
 
-		cidList[i] = artifactCid
+		cidList[fileIndex] = artifactCid
 	}
 
 	return cidList, nil
 }
 
-func ParseArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
+func ArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
 	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
 	if err != nil {
 		return nil, err
