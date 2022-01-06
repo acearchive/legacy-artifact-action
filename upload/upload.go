@@ -2,8 +2,10 @@ package upload
 
 import (
 	"context"
+	"errors"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
+	"io"
 )
 
 func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struct{}, error) {
@@ -16,9 +18,9 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struc
 
 	for {
 		status, err := iter.Next()
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
-		} else if status == nil {
+		} else if errors.Is(err, io.EOF) || status == nil {
 			break
 		}
 
