@@ -3,6 +3,7 @@ package parse
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"github.com/ipfs/go-cid"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -116,6 +117,8 @@ func ArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
 		return nil, err
 	}
 
+	fmt.Printf("Found %d artifact files\n", len(artifactFilePaths))
+
 	cidList := make([]cid.Cid, 0, len(artifactFilePaths))
 	for _, filePath := range artifactFilePaths {
 		frontMatter, err := extractFrontMatter(filePath)
@@ -130,6 +133,8 @@ func ArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
 
 		cidList = append(cidList, currentCidList...)
 	}
+
+	fmt.Printf("Found %d CIDs in artifact files\n", len(cidList))
 
 	return cidList, nil
 }
