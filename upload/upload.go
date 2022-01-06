@@ -63,6 +63,8 @@ func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) erro
 			continue
 		}
 
+		fmt.Printf("Uploading: %s\n", currentCid.String())
+
 		car, err := PackCar(ctx, ipfsClient, currentCid)
 		if err != nil {
 			return err
