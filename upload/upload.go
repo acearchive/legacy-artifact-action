@@ -3,6 +3,7 @@ package upload
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
 	"io"
@@ -31,37 +32,33 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struc
 }
 
 func Content(ctx context.Context, token string, cidList []cid.Cid) error {
-	service, err := NewLocalService()
+	w3sClient, err := w3s.NewClient(w3s.WithToken(token))
 	if err != nil {
 		return err
 	}
 
-	client, err := w3s.NewClient(w3s.WithToken(token))
+	ipfsClient, err := NewClient()
 	if err != nil {
 		return err
 	}
 
-	existingCids, err := listExistingCids(ctx, client)
+	existingCids, err := listExistingCids(ctx, w3sClient)
 	if err != nil {
 		return err
 	}
 
 	for _, id := range cidList {
 		if _, exists := existingCids[id]; exists {
+			fmt.Printf("Skipping previously archived content: %s\n", id.String())
 			continue
 		}
 
-		content, err := DownloadContent(ctx, id)
+		car, err := PackCar(ctx, ipfsClient, id)
 		if err != nil {
 			return err
 		}
 
-		car, err := service.PackCar(ctx, content)
-		if err != nil {
-			return err
-		}
-
-		if _, err := client.PutCar(ctx, car); err != nil {
+		if _, err := w3sClient.PutCar(ctx, car); err != nil {
 			return err
 		}
 	}
