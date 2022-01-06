@@ -9,13 +9,19 @@ import (
 	"io"
 )
 
-func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struct{}, error) {
+type contentKey string
+
+func contentKeyFromCid(id cid.Cid) contentKey {
+	return contentKey(id.Hash().HexString())
+}
+
+func listExistingCids(ctx context.Context, client w3s.Client) (map[contentKey]struct{}, error) {
 	iter, err := client.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var cidSet = make(map[cid.Cid]struct{})
+	var cidSet = make(map[contentKey]struct{})
 
 	for {
 		status, err := iter.Next()
@@ -25,7 +31,7 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[cid.Cid]struc
 			break
 		}
 
-		cidSet[status.Cid] = struct{}{}
+		cidSet[contentKeyFromCid(status.Cid)] = struct{}{}
 	}
 
 	return cidSet, nil
@@ -48,7 +54,11 @@ func Content(ctx context.Context, token string, cidList []cid.Cid) error {
 	}
 
 	for _, id := range cidList {
-		if _, exists := existingCids[id]; exists {
+		// We need to check if content already exists in Web3.Storage before we
+		// store it again, but we should compare CIDs by their multihash rather
+		// than directly so that a CIDv0 and a CIDv1 aren't detected as
+		// different contents.
+		if _, exists := existingCids[contentKeyFromCid(id)]; exists {
 			fmt.Printf("Skipping previously archived content: %s\n", id.String())
 			continue
 		}
