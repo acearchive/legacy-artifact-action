@@ -12,8 +12,8 @@ func run() error {
 	ctx := context.Background()
 
 	workspacePath := os.Getenv("GITHUB_WORKSPACE")
-	w3sToken := os.Getenv("INPUT_W3S_TOKEN")
-	pathGlob := os.Getenv("INPUT_PATH_GLOB")
+	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
+	pathGlob := os.Getenv("INPUT_PATH-GLOB")
 	uploadContent := os.Getenv("INPUT_UPLOAD")
 
 	cidList, err := parse.ArtifactFiles(workspacePath, pathGlob)
