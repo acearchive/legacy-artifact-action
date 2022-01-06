@@ -57,6 +57,10 @@ func (s *LocalService) PackCar(ctx context.Context, content io.ReadCloser) (io.R
 		return nil, err
 	}
 
+	if err := content.Close(); err != nil {
+		return nil, err
+	}
+
 	go func() {
 		err = car.WriteCar(ctx, s, []cid.Cid{node.Cid()}, carWriter)
 		if err != nil {
