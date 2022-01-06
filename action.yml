@@ -9,10 +9,10 @@ inputs:
   upload:
     description: "Upload the artifacts instead of just validating them"
     required: true
-    default: false
+    default: "false"
   ipfs-api:
     description: "The multiaddr of the API endpoint of the running IPFS node"
-    required: true
+    required: false
 runs:
   using: "docker"
   image: "Dockerfile"

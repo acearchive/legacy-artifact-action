@@ -22,7 +22,7 @@ func run() error {
 		return err
 	}
 
-	if uploadContent != "true" {
+	if uploadContent != "true" || ipfsApiAddr == "" {
 		return nil
 	}
 
