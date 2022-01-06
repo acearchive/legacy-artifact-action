@@ -5,13 +5,11 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-const defaultClientApiAddr = "/ip4/127.0.0.1/tcp/5001"
-
-func NewClient() (*api.HttpApi, error) {
-	addr, err := multiaddr.NewMultiaddr(defaultClientApiAddr)
+func NewClient(addr string) (*api.HttpApi, error) {
+	multiAddr, err := multiaddr.NewMultiaddr(addr)
 	if err != nil {
 		return nil, err
 	}
 
-	return api.NewApi(addr)
+	return api.NewApi(multiAddr)
 }

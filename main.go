@@ -15,6 +15,7 @@ func run() error {
 	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
 	pathGlob := os.Getenv("INPUT_PATH-GLOB")
 	uploadContent := os.Getenv("INPUT_UPLOAD")
+	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 
 	cidList, err := parse.ArtifactFiles(workspacePath, pathGlob)
 	if err != nil {
@@ -25,7 +26,7 @@ func run() error {
 		return nil
 	}
 
-	return upload.Content(ctx, w3sToken, cidList)
+	return upload.Content(ctx, w3sToken, ipfsApiAddr, cidList)
 }
 
 func main() {

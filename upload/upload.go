@@ -37,13 +37,13 @@ func listExistingCids(ctx context.Context, client w3s.Client) (map[contentKey]st
 	return cidSet, nil
 }
 
-func Content(ctx context.Context, token string, cidList []cid.Cid) error {
+func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error {
 	w3sClient, err := w3s.NewClient(w3s.WithToken(token))
 	if err != nil {
 		return err
 	}
 
-	ipfsClient, err := NewClient()
+	ipfsClient, err := NewClient(apiAddr)
 	if err != nil {
 		return err
 	}

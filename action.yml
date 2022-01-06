@@ -10,6 +10,9 @@ inputs:
     description: "Upload the artifacts instead of just validating them"
     required: true
     default: false
+  ipfs-api:
+    description: "The multiaddr of the API endpoint of the running IPFS node"
+    required: true
 runs:
   using: "docker"
   image: "Dockerfile"
