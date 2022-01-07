@@ -2,59 +2,10 @@ package upload
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
-	"io"
-	"time"
 )
-
-const maxPageSize = 25
-
-type contentKey string
-
-func contentKeyFromCid(id cid.Cid) contentKey {
-	return contentKey(id.Hash().HexString())
-}
-
-func listExistingCids(ctx context.Context, client w3s.Client) (map[contentKey]struct{}, error) {
-	paginationParams := []w3s.ListOption{w3s.WithMaxResults(maxPageSize)}
-	cidSet := make(map[contentKey]struct{})
-
-	for {
-		iter, err := client.List(ctx, paginationParams...)
-		if err != nil {
-			return nil, err
-		}
-
-		currentPageSize := 0
-
-		// The endpoint returns items in order from newest to oldest.
-		var oldestTimestamp time.Time
-
-		for {
-			status, err := iter.Next()
-			if err != nil && !errors.Is(err, io.EOF) {
-				return nil, err
-			} else if errors.Is(err, io.EOF) {
-				break
-			}
-
-			currentPageSize++
-			oldestTimestamp = status.Created
-			cidSet[contentKeyFromCid(status.Cid)] = struct{}{}
-		}
-
-		if currentPageSize < maxPageSize {
-			break
-		}
-
-		paginationParams = []w3s.ListOption{w3s.WithMaxResults(maxPageSize), w3s.WithBefore(oldestTimestamp)}
-	}
-
-	return cidSet, nil
-}
 
 func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error {
 	w3sClient, err := w3s.NewClient(w3s.WithToken(token))
@@ -67,7 +18,7 @@ func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) erro
 		return err
 	}
 
-	existingCids, err := listExistingCids(ctx, w3sClient)
+	existingCids, err := listExistingCids(ctx, token)
 	if err != nil {
 		return err
 	}
