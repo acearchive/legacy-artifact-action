@@ -7,7 +7,10 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
 	"io"
+	"time"
 )
+
+const maxPageSize = 25
 
 type contentKey string
 
@@ -16,22 +19,38 @@ func contentKeyFromCid(id cid.Cid) contentKey {
 }
 
 func listExistingCids(ctx context.Context, client w3s.Client) (map[contentKey]struct{}, error) {
-	iter, err := client.List(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var cidSet = make(map[contentKey]struct{})
+	paginationParams := []w3s.ListOption{w3s.WithMaxResults(maxPageSize)}
+	cidSet := make(map[contentKey]struct{})
 
 	for {
-		status, err := iter.Next()
-		if err != nil && !errors.Is(err, io.EOF) {
+		iter, err := client.List(ctx, paginationParams...)
+		if err != nil {
 			return nil, err
-		} else if errors.Is(err, io.EOF) {
+		}
+
+		currentPageSize := 0
+
+		// The endpoint returns items in order from newest to oldest.
+		var oldestTimestamp time.Time
+
+		for {
+			status, err := iter.Next()
+			if err != nil && !errors.Is(err, io.EOF) {
+				return nil, err
+			} else if errors.Is(err, io.EOF) {
+				break
+			}
+
+			currentPageSize++
+			oldestTimestamp = status.Created
+			cidSet[contentKeyFromCid(status.Cid)] = struct{}{}
+		}
+
+		if currentPageSize < maxPageSize {
 			break
 		}
 
-		cidSet[contentKeyFromCid(status.Cid)] = struct{}{}
+		paginationParams = []w3s.ListOption{w3s.WithMaxResults(maxPageSize), w3s.WithBefore(oldestTimestamp)}
 	}
 
 	return cidSet, nil
