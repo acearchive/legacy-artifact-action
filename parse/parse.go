@@ -83,35 +83,16 @@ findStart:
 	return frontMatter.String(), nil
 }
 
-type artifactFileEntry struct {
-	Cid string `yaml:"cid"`
-}
-
-type artifactEntry struct {
-	Files []artifactFileEntry `yaml:"files"`
-}
-
-func extractArtifactCids(frontMatter string) ([]cid.Cid, error) {
-	artifact := artifactEntry{}
-	if err := yaml.Unmarshal([]byte(frontMatter), &artifact); err != nil {
-		return nil, err
+func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
+	entry := ArtifactEntry{}
+	if err := yaml.Unmarshal([]byte(frontMatter), &entry); err != nil {
+		return ArtifactEntry{}, err
 	}
 
-	cidList := make([]cid.Cid, len(artifact.Files))
-
-	for fileIndex, artifactFile := range artifact.Files {
-		artifactCid, err := cid.Parse(artifactFile.Cid)
-		if err != nil {
-			return nil, err
-		}
-
-		cidList[fileIndex] = artifactCid
-	}
-
-	return cidList, nil
+	return entry, nil
 }
 
-func ArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
+func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
 	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
 	if err != nil {
 		return nil, err
@@ -119,14 +100,30 @@ func ArtifactFiles(workspacePath, pathGlob string) ([]cid.Cid, error) {
 
 	fmt.Printf("Found %d artifact files\n", len(artifactFilePaths))
 
-	cidList := make([]cid.Cid, 0, len(artifactFilePaths))
-	for _, filePath := range artifactFilePaths {
+	entries := make([]ArtifactEntry, len(artifactFilePaths))
+
+	for entryIndex, filePath := range artifactFilePaths {
 		frontMatter, err := extractFrontMatter(filePath)
 		if err != nil {
 			return nil, err
 		}
 
-		currentCidList, err := extractArtifactCids(frontMatter)
+		entry, err := parseArtifactEntry(frontMatter)
+		if err != nil {
+			return nil, err
+		}
+
+		entries[entryIndex] = entry
+	}
+
+	return entries, nil
+}
+
+func ExtractCids(entries []ArtifactEntry) ([]cid.Cid, error) {
+	cidList := make([]cid.Cid, 0, len(entries))
+
+	for _, entry := range entries {
+		currentCidList, err := entry.AllCids()
 		if err != nil {
 			return nil, err
 		}

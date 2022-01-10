@@ -17,7 +17,12 @@ func run() error {
 	uploadContent := os.Getenv("INPUT_UPLOAD")
 	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 
-	cidList, err := parse.ArtifactFiles(workspacePath, pathGlob)
+	artifactEntries, err := parse.ArtifactEntries(workspacePath, pathGlob)
+	if err != nil {
+		return err
+	}
+
+	cidList, err := parse.ExtractCids(artifactEntries)
 	if err != nil {
 		return err
 	}
