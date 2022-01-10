@@ -17,18 +17,18 @@ func run() error {
 	uploadContent := os.Getenv("INPUT_UPLOAD")
 	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 
-	artifactEntries, err := parse.ArtifactEntries(workspacePath, pathGlob)
-	if err != nil {
-		return err
-	}
-
-	cidList, err := parse.ExtractCids(artifactEntries)
+	artifacts, err := parse.ArtifactEntries(workspacePath, pathGlob)
 	if err != nil {
 		return err
 	}
 
 	if uploadContent != "true" || ipfsApiAddr == "" || w3sToken == "" {
 		return nil
+	}
+
+	cidList, err := parse.ExtractCids(artifacts)
+	if err != nil {
+		return err
 	}
 
 	return upload.Content(ctx, w3sToken, ipfsApiAddr, cidList)

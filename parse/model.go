@@ -3,7 +3,7 @@ package parse
 import "github.com/ipfs/go-cid"
 
 type ArtifactFileEntry struct {
-	Name      string  `yaml:"string"`
+	Name      string  `yaml:"name"`
 	MediaType *string `yaml:"mediaType"`
 	Filename  *string `yaml:"filename"`
 	Cid       string  `yaml:"cid"`

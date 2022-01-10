@@ -15,6 +15,15 @@ const frontMatterDelimiter = "---"
 
 var ErrNoFrontMatter = errors.New("this file has no front matter")
 
+type ArtifactParseError struct {
+	Path   string
+	Reason string
+}
+
+func (e ArtifactParseError) Error() string {
+	return fmt.Sprintf("'%s': %s", e.Path, e.Reason)
+}
+
 func findArtifactFiles(workspacePath, pathGlob string) ([]string, error) {
 	return filepath.Glob(filepath.Join(workspacePath, pathGlob))
 }
@@ -85,7 +94,7 @@ findStart:
 
 func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
 	entry := ArtifactEntry{}
-	if err := yaml.Unmarshal([]byte(frontMatter), &entry); err != nil {
+	if err := yaml.UnmarshalStrict([]byte(frontMatter), &entry); err != nil {
 		return ArtifactEntry{}, err
 	}
 
@@ -102,28 +111,53 @@ func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
 
 	entries := make([]ArtifactEntry, len(artifactFilePaths))
 
+	var artifactErrors []error
+
 	for entryIndex, filePath := range artifactFilePaths {
-		frontMatter, err := extractFrontMatter(filePath)
+		relativePath, err := filepath.Rel(workspacePath, filePath)
 		if err != nil {
 			return nil, err
 		}
 
+		frontMatter, err := extractFrontMatter(filePath)
+		if err != nil {
+			artifactErrors = append(artifactErrors, ArtifactParseError{
+				Path:   relativePath,
+				Reason: err.Error(),
+			})
+			continue
+		}
+
 		entry, err := parseArtifactEntry(frontMatter)
 		if err != nil {
-			return nil, err
+			artifactErrors = append(artifactErrors, ArtifactParseError{
+				Path:   relativePath,
+				Reason: err.Error(),
+			})
+			continue
+		}
+
+		if validateErr := Validate(entry, relativePath); validateErr != nil {
+			artifactErrors = append(artifactErrors, validateErr)
 		}
 
 		entries[entryIndex] = entry
 	}
 
+	if len(artifactErrors) != 0 {
+		LogArtifactErrors(artifactErrors)
+	} else {
+		fmt.Println("All artifact files are valid")
+	}
+
 	return entries, nil
 }
 
-func ExtractCids(entries []ArtifactEntry) ([]cid.Cid, error) {
-	cidList := make([]cid.Cid, 0, len(entries))
+func ExtractCids(artifacts []ArtifactEntry) ([]cid.Cid, error) {
+	cidList := make([]cid.Cid, 0, len(artifacts))
 
-	for _, entry := range entries {
-		currentCidList, err := entry.AllCids()
+	for _, artifact := range artifacts {
+		currentCidList, err := artifact.AllCids()
 		if err != nil {
 			return nil, err
 		}
