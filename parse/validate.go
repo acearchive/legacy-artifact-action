@@ -64,20 +64,46 @@ func Validate(entry ArtifactEntry, filePath string) error {
 		registerError("decades", "can not be empty")
 	}
 
+	earliestDecade := entry.FromYear - (entry.FromYear % 10)
+	remainingDecades := make(map[int]struct{})
+
+	if entry.ToYear == nil {
+		remainingDecades[earliestDecade] = struct{}{}
+	} else {
+		latestDecade := *entry.ToYear - (*entry.ToYear % 10)
+		for expectedDecade := earliestDecade; expectedDecade <= latestDecade; expectedDecade += 10 {
+			remainingDecades[expectedDecade] = struct{}{}
+		}
+	}
+
 	for decadeIndex, decade := range entry.Decades {
 		if decade%10 != 0 {
 			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "is not a decade")
+			continue
 		}
 
-		if earliestDecade := entry.FromYear - (entry.FromYear % 10); decade < earliestDecade {
+		if decade < earliestDecade {
 			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes before the decade of `fromYear`")
+			continue
 		}
 
 		if entry.ToYear != nil {
 			if latestDecade := *entry.ToYear - (*entry.ToYear % 10); decade > latestDecade {
 				registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes after the decade of `toYear`")
+				continue
 			}
 		}
+
+		if _, ok := remainingDecades[decade]; !ok {
+			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "is in the list more than once")
+			continue
+		}
+
+		delete(remainingDecades, decade)
+	}
+
+	for expectedButNotFoundDecade := range remainingDecades {
+		registerError("decades", fmt.Sprintf("should contain '%d' but doesn't", expectedButNotFoundDecade))
 	}
 
 	for fileIndex, fileEntry := range entry.Files {
