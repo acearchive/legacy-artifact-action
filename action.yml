@@ -1,4 +1,7 @@
-name: "Parse artifact files in a repository"
+name: "Host Ace Archive artifacts"
+description: >
+  This action is part of the Ace Archive project, and is used to host content
+  submitted to Ace Archive.
 inputs:
   path-glob:
     description: >
@@ -24,3 +27,6 @@ outputs:
 runs:
   using: "docker"
   image: "Dockerfile"
+branding:
+  icon: "archive"
+  color: "purple"
