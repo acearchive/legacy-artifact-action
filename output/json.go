@@ -13,6 +13,7 @@ type ArtifactFileOutput struct {
 }
 
 type ArtifactOutput struct {
+	Slug            string               `json:"slug"`
 	Title           string               `json:"title"`
 	Description     string               `json:"description"`
 	LongDescription *string              `json:"longDescription"`
@@ -28,11 +29,11 @@ type Output struct {
 	Artifacts []ArtifactOutput `json:"artifacts"`
 }
 
-func Marshal(entries []parse.ArtifactEntry) (string, error) {
+func Marshal(entries []parse.Artifact) (string, error) {
 	artifacts := make([]ArtifactOutput, len(entries))
-	for entryIndex, artifactEntry := range entries {
-		files := make([]ArtifactFileOutput, len(artifactEntry.Files))
-		for fileIndex, fileEntry := range artifactEntry.Files {
+	for entryIndex, artifact := range entries {
+		files := make([]ArtifactFileOutput, len(artifact.Entry.Files))
+		for fileIndex, fileEntry := range artifact.Entry.Files {
 			files[fileIndex] = ArtifactFileOutput{
 				Name:      fileEntry.Name,
 				MediaType: fileEntry.MediaType,
@@ -42,15 +43,16 @@ func Marshal(entries []parse.ArtifactEntry) (string, error) {
 		}
 
 		artifacts[entryIndex] = ArtifactOutput{
-			Title:           artifactEntry.Title,
-			Description:     artifactEntry.Description,
-			LongDescription: artifactEntry.LongDescription,
+			Slug:            artifact.Slug,
+			Title:           artifact.Entry.Title,
+			Description:     artifact.Entry.Description,
+			LongDescription: artifact.Entry.LongDescription,
 			Files:           files,
-			People:          artifactEntry.People,
-			Identities:      artifactEntry.Identities,
-			FromYear:        artifactEntry.FromYear,
-			ToYear:          artifactEntry.ToYear,
-			Decades:         artifactEntry.Decades,
+			People:          artifact.Entry.People,
+			Identities:      artifact.Entry.Identities,
+			FromYear:        artifact.Entry.FromYear,
+			ToYear:          artifact.Entry.ToYear,
+			Decades:         artifact.Entry.Decades,
 		}
 	}
 

@@ -101,7 +101,7 @@ func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
 	return entry, nil
 }
 
-func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
+func Artifacts(workspacePath, pathGlob string) ([]Artifact, error) {
 	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
 
 	fmt.Printf("Found %d artifact files\n", len(artifactFilePaths))
 
-	entries := make([]ArtifactEntry, len(artifactFilePaths))
+	artifacts := make([]Artifact, len(artifactFilePaths))
 
 	var artifactErrors []error
 
@@ -141,7 +141,10 @@ func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
 			artifactErrors = append(artifactErrors, validateErr)
 		}
 
-		entries[entryIndex] = entry
+		artifacts[entryIndex] = Artifact{
+			Entry: entry,
+			Slug:  filepath.Base(filepath.Dir(relativePath)),
+		}
 	}
 
 	if len(artifactErrors) != 0 {
@@ -150,10 +153,10 @@ func ArtifactEntries(workspacePath, pathGlob string) ([]ArtifactEntry, error) {
 		fmt.Println("All artifact files are valid")
 	}
 
-	return entries, nil
+	return artifacts, nil
 }
 
-func ExtractCids(artifacts []ArtifactEntry) ([]cid.Cid, error) {
+func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 	cidList := make([]cid.Cid, 0, len(artifacts))
 
 	for _, artifact := range artifacts {

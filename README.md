@@ -17,10 +17,59 @@ network. This action can also be used with forks of the repository as long as
 the format of the artifact files is the same.
 
 Out of the box, this action supports uploading content to Web3.Storage, but the
-JSON output can be used to upload the content to any IPFS pinning service. To
-upload a content to Web3.Storage, an IPFS node must be running and you must
-pass in the mutiaddr of the node's API endpoint. The action is smart enough to
-skip any files already uploaded to your Web3.Storage account in a previous run.
+JSON output could be used to write CI tooling for uploading content to any IPFS
+pinning service.
+
+To upload content to Web3.Storage, an IPFS node must be running and you must
+pass in your Web3.Storage API token and the mutiaddr of the IPFS node's API
+endpoint. The action is smart enough to skip any files already uploaded to your
+Web3.Storage account in a previous run.
+
+## Output
+
+The JSON output of this action looks like this. It mirrors the schema of
+artifact files, with the addition of the `slug` field containing the URL slug
+of the artifact. Fields which are optional in the artifact file are serialized
+as `null` in the JSON output.
+
+```json
+{
+  "artifacts": [
+    {
+      "slug": "orlando-the-asexual-manifesto",
+      "title": "<em>The Asexual Manifesto</em>",
+      "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
+      "longDescription": null,
+      "files": [
+        {
+          "name": "The Asexual Manifesto",
+          "mediaType": "application/pdf",
+          "filename": "the-asexual-manifesto.pdf",
+          "cid": "bafybeihsf4562gmmyoya7eh5buxv65lqcdoil3wsi5jf5fceskap7yzooi"
+        },
+        {
+          "name": "The Asexual Manifesto (Transcript)",
+          "mediaType": "text/html",
+          "filename": "the-asexual-manifesto-transcript.html",
+          "cid": "bafkreie5hknsonewqxuyf6vzlauhn2qwm2og5yjcqrltv5yumyqdvdm4sm"
+        }
+      ],
+      "people": [
+        "Lisa Orlando",
+        "Barbara Getz"
+      ],
+      "identities": [
+        "asexual"
+      ],
+      "fromYear": 1972,
+      "toYear": null,
+      "decades": [
+        1970
+      ]
+    }
+  ]
+}
+```
 
 ## Examples
 

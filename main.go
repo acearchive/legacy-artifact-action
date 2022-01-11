@@ -17,7 +17,7 @@ func run() error {
 	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
 	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 
-	artifacts, err := parse.ArtifactEntries(workspacePath, pathGlob)
+	artifacts, err := parse.Artifacts(workspacePath, pathGlob)
 	if err != nil {
 		return err
 	}

@@ -2,6 +2,11 @@ package parse
 
 import "github.com/ipfs/go-cid"
 
+type Artifact struct {
+	Slug  string
+	Entry ArtifactEntry
+}
+
 type ArtifactFileEntry struct {
 	Name      string  `yaml:"name"`
 	MediaType *string `yaml:"mediaType"`
@@ -21,10 +26,10 @@ type ArtifactEntry struct {
 	Decades         []int               `yaml:"decades"`
 }
 
-func (e ArtifactEntry) AllCids() ([]cid.Cid, error) {
-	cidList := make([]cid.Cid, len(e.Files))
+func (e Artifact) AllCids() ([]cid.Cid, error) {
+	cidList := make([]cid.Cid, len(e.Entry.Files))
 
-	for fileIndex, artifactFile := range e.Files {
+	for fileIndex, artifactFile := range e.Entry.Files {
 		artifactCid, err := cid.Parse(artifactFile.Cid)
 		if err != nil {
 			return nil, err
