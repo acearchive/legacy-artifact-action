@@ -1,18 +1,24 @@
-name: "Upload artifacts to Web3.Storage"
+name: "Parse artifact files in a repository"
 inputs:
   path-glob:
-    description: "A glob for matching artifact files"
+    description: >
+      A glob for matching artifact files in the checked out repository.
     required: true
+    default: "content/archive/*/index.md"
   w3s-token:
-    description: "The secret API token for web3.storage"
+    description: >
+      The secret API token for Web3.Storage. If this is provided, all artifacts
+      in the repository are uploaded to Web3.Storage automatically.
     required: false
   ipfs-api:
-    description: "The multiaddr of the API endpoint of the running IPFS node"
+    description: >
+      The multiaddr of the API endpoint of the running IPFS node. This is
+      required to upload artifacts to Web3.Storage.
     required: false
-  upload:
-    description: "Upload the artifacts instead of just validating them"
-    required: true
-    default: "false"
+outputs:
+  artifacts:
+    description: >
+      A JSON document describing the artifacts in the repository.
 runs:
   using: "docker"
   image: "Dockerfile"

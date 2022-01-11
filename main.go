@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/frawleyskid/w3s-upload/output"
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/frawleyskid/w3s-upload/upload"
 	"os"
@@ -12,9 +13,8 @@ func run() error {
 	ctx := context.Background()
 
 	workspacePath := os.Getenv("GITHUB_WORKSPACE")
-	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
 	pathGlob := os.Getenv("INPUT_PATH-GLOB")
-	uploadContent := os.Getenv("INPUT_UPLOAD")
+	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
 	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 
 	artifacts, err := parse.ArtifactEntries(workspacePath, pathGlob)
@@ -22,7 +22,14 @@ func run() error {
 		return err
 	}
 
-	if uploadContent != "true" || ipfsApiAddr == "" || w3sToken == "" {
+	jsonOutput, err := output.Marshal(artifacts)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("::set-output name=artifacts::%s\n", jsonOutput)
+
+	if ipfsApiAddr == "" || w3sToken == "" {
 		return nil
 	}
 
