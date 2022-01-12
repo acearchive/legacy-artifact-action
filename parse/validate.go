@@ -106,6 +106,10 @@ func Validate(entry ArtifactEntry, filePath string) error {
 		registerError("decades", fmt.Sprintf("should contain '%d' but doesn't", expectedButNotFoundDecade))
 	}
 
+	if len(entry.Files) == 0 {
+		registerError("files", "can not be empty")
+	}
+
 	for fileIndex, fileEntry := range entry.Files {
 		if fileEntry.Name == "" {
 			registerError(fmt.Sprintf("files[%d].name", fileIndex), "can not be empty")
