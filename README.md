@@ -16,14 +16,28 @@ can be used by anyone to help host the content on Ace Archive on the IPFS
 network. This action can also be used with forks of the repository as long as
 the format of the artifact files is the same.
 
-Out of the box, this action supports uploading content to Web3.Storage, but the
-JSON output could be used to write CI tooling for uploading content to any IPFS
-pinning service.
+Out of the box, this action supports uploading content to Web3.Storage or any
+pinning service that supports the [IPFS pinning service
+API](https://ipfs.github.io/pinning-services-api-spec/), but the JSON output
+could be used to write CI tooling for hosting the content anywhere. It's
+possible to upload content to both Web3.Storage and a pinning service by
+specifying all the necessary input parameters.
+
+## Web3.Storage
 
 To upload content to Web3.Storage, an IPFS node must be running and you must
 pass in your Web3.Storage API token and the mutiaddr of the IPFS node's API
 endpoint. The action is smart enough to skip any files already uploaded to your
 Web3.Storage account in a previous run.
+
+## Pinning services
+
+To pin content with an IPFS pinning service, you must specify the API endpoint
+of the pinning service and your bearer token. Note that pinning services that
+support the standardized API may use a separate endpoint for it. For example,
+the endpoint for [Pinata](https://www.pinata.cloud/) is
+`https://api.pinata.cloud/psa`. The action is smart enough to skip any files
+already pinned to your account in a previous run.
 
 ## Output
 
@@ -116,4 +130,23 @@ jobs:
         with:
           w3s-token: ${{ secrets.W3S_API_TOKEN }}
           ipfs-api: "/dns/ipfs/tcp/5001/http"
+```
+
+### Pin with a pinning service
+
+```yaml
+jobs:
+  archive:
+    name: "Upload artiacts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          repository: "acearchive/acearchive.lgbt"
+      - name: "Upload artifacts"
+        uses: acearchive/artifact-action@main
+        with:
+          pin-endpoint: "https://api.pinata.cloud/psa"
+          pin-token: ${{ secrets.PINATA_API_TOKEN }}
 ```

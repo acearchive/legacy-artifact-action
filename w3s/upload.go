@@ -3,6 +3,7 @@ package w3s
 import (
 	"context"
 	"fmt"
+	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
 )
@@ -32,7 +33,7 @@ func Upload(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error
 	// than directly so that a CIDv0 and a CIDv1 aren't detected as different
 	// contents.
 	for _, id := range cidList {
-		if _, alreadyUploaded := existingCids[contentKeyFromCid(id)]; !alreadyUploaded {
+		if _, alreadyUploaded := existingCids[parse.ContentKeyFromCid(id)]; !alreadyUploaded {
 			filesToUpload = append(filesToUpload, id)
 		}
 	}

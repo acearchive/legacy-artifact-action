@@ -20,6 +20,17 @@ inputs:
       The multiaddr of the API endpoint of the running IPFS node. This is
       required to upload artifacts to Web3.Storage.
     required: false
+  pin-endpoint:
+    description: >
+      The URL of the IPFS pinning service API endpoint to use. If this is
+      provided, all artifacts in the repository are pinned using this pinning
+      service.
+    required: false
+  pin-token:
+    description: >
+      The bearer token for the configured IPFS pinning service. This is
+      required to pin artifacts using an IPFS pinning service.
+    required: false
 outputs:
   artifacts:
     description: >

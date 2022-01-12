@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	"net/http"
 	"time"
@@ -57,14 +58,8 @@ func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sS
 	return page, nil
 }
 
-type contentKey string
-
-func contentKeyFromCid(id cid.Cid) contentKey {
-	return contentKey(id.Hash().HexString())
-}
-
-func listExistingCids(ctx context.Context, token string) (map[contentKey]struct{}, error) {
-	cidSet := make(map[contentKey]struct{})
+func listExistingCids(ctx context.Context, token string) (map[parse.ContentKey]struct{}, error) {
+	cidSet := make(map[parse.ContentKey]struct{})
 	pagingParameter := time.Now()
 
 	for {
@@ -84,7 +79,7 @@ func listExistingCids(ctx context.Context, token string) (map[contentKey]struct{
 			}
 
 			pagingParameter = status.Created
-			cidSet[contentKeyFromCid(currentCid)] = struct{}{}
+			cidSet[parse.ContentKeyFromCid(currentCid)] = struct{}{}
 		}
 	}
 
