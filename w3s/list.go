@@ -1,4 +1,4 @@
-package upload
+package w3s
 
 import (
 	"context"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/frawleyskid/w3s-upload/output"
 	"github.com/frawleyskid/w3s-upload/parse"
-	"github.com/frawleyskid/w3s-upload/upload"
+	"github.com/frawleyskid/w3s-upload/w3s"
 	"os"
 )
 
@@ -38,7 +38,7 @@ func run() error {
 		return err
 	}
 
-	return upload.Content(ctx, w3sToken, ipfsApiAddr, cidList)
+	return w3s.Upload(ctx, w3sToken, ipfsApiAddr, cidList)
 }
 
 func main() {

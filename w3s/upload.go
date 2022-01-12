@@ -1,4 +1,4 @@
-package upload
+package w3s
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/web3-storage/go-w3s-client"
 )
 
-func Content(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error {
+func Upload(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error {
 	w3sClient, err := w3s.NewClient(w3s.WithToken(token))
 	if err != nil {
 		return err
