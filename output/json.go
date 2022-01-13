@@ -14,7 +14,7 @@ type ArtifactFileOutput struct {
 
 type ArtifactOutput struct {
 	Slug            string               `json:"slug"`
-	Rev             string               `json:"rev"`
+	Rev             *string              `json:"rev"`
 	Title           string               `json:"title"`
 	Description     string               `json:"description"`
 	LongDescription *string              `json:"longDescription"`

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/frawleyskid/w3s-upload/output"
 	"github.com/frawleyskid/w3s-upload/parse"
@@ -10,23 +11,37 @@ import (
 	"os"
 )
 
+var ErrInvalidMode = errors.New("invalid mode")
+
 func run() error {
 	ctx := context.Background()
 
 	workspacePath := os.Getenv("GITHUB_WORKSPACE")
+	mode := os.Getenv("INPUT_MODE")
 	pathGlob := os.Getenv("INPUT_PATH-GLOB")
 	w3sToken := os.Getenv("INPUT_W3S-TOKEN")
 	ipfsApiAddr := os.Getenv("INPUT_IPFS-API")
 	pinEndpoint := os.Getenv("INPUT_PIN-ENDPOINT")
 	pinToken := os.Getenv("INPUT_PIN-TOKEN")
 
-	if err := parse.Validate(workspacePath, pathGlob); err != nil {
-		return err
-	}
+	var (
+		artifacts []parse.Artifact
+		err       error
+	)
 
-	artifacts, err := parse.Artifacts(workspacePath, pathGlob)
-	if err != nil {
-		return err
+	switch mode {
+	case "tree":
+		artifacts, err = parse.Tree(workspacePath, pathGlob)
+		if err != nil {
+			return err
+		}
+	case "history":
+		artifacts, err = parse.History(workspacePath, pathGlob)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("%w: %s", ErrInvalidMode, mode)
 	}
 
 	jsonOutput, err := output.Marshal(artifacts)

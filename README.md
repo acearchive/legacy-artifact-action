@@ -23,28 +23,44 @@ could be used to write CI tooling for hosting the content anywhere. It's
 possible to upload content to both Web3.Storage and a pinning service by
 specifying all the necessary input parameters.
 
-## Previous versions of artifacts
+## Modes
 
-Sometimes, the contents of an artifact file change. For example, a
-transcription might be replaced with a more accurate one. However, because IPFS
-uses content-based addressing, links to files don't always necessarily point to
-the latest version of that file. To ensure that these links never go dead, it's
-prudent to not just host the content *currently* in Ace Archive, but all the
-content that's *ever* been in Ace Archive. Because artifact files are version
-controlled using git, we can do this fairly easily.
+This action has two modes of operation, which you specify via the `mode` input
+parameter. The default mode is `tree`.
 
-Out of the box, this action traverses the git commit history and parses every
-version of every artifact file in the history of the repository. You can
-control how much of the history you want to include by configuring the
-`fetch-depth` input of the
-[actions/checkout](https://github.com/actions/checkout) action. The default
-behavior is to only fetch a single commit, but you can set `fetch-depth: 0` to
-fetch the entire commit history.
+### Tree mode
 
-Something important to note is that when this action validates the syntax of
-artifact files, it only validates the syntax for the current (HEAD) versions.
-If a previous version of an artifact file has invalid syntax, it is just
-skipped silently.
+In `tree` mode, artifact files are pulled from the working tree of the
+repository and their syntax is validated. If any artifact file in the working
+tree has invalid syntax, the action fails.
+
+This mode is useful or performing status checks on pull requests to ensure
+submitted artifact files are valid and for uploading new artifact files when
+commits are pushed or pull requests are merged.
+
+### History mode
+
+Sometimes, the contents of an artifact file change. For example, a file
+containing a transcription might be replaced with a more accurate one. However,
+because IPFS uses content-based addressing, links to files don't always
+necessarily point to the latest version of that file. To ensure that these
+links never go dead, it's prudent to not just host the content *currently* in
+Ace Archive, but all the content that's *ever* been in Ace Archive. Because
+artifact files are version controlled using git, we can do this fairly easily.
+
+In `history` mode, the commit history of the repository is traversed and each
+version of each artifact file is pulled from the commit history. However, in
+this mode, the syntax of artifact files are not validated, and invalid artifact
+files are skipped silently. Otherwise, an invalid artifact file that is
+committed to the repository and then fixed in a subsequent commit would cause
+the action to fail.
+
+This mode is useful for hosting artifacts from the archive in bulk, including
+previous versions of artifact files containing files that are no longer in the
+working tree. Keep in mind that, by default,
+[actions/checkout](https://github.com/actions/checkout) only fetches one
+commit, so you'll want to set `fetch-depth: 0` in its input parameters to fetch
+the entire commit history.
 
 ## Web3.Storage
 
@@ -67,9 +83,9 @@ already pinned to your account in a previous run.
 The JSON output of this action looks like this. It mirrors the schema of
 artifact files, with the addition of the following fields:
 
-- `slug` contains the URL slug of the artifact
+- `slug` contains the URL slug of the artifact.
 - `rev` contains the git commit hash of the commit the artifact file was pulled
-  from
+  from. In `tree` mode, this field is always `null`.
 
 Fields which are optional in the artifact file are serialized as `null` in the
 JSON output.

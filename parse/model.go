@@ -4,7 +4,7 @@ import "github.com/ipfs/go-cid"
 
 type Artifact struct {
 	Slug  string
-	Rev   string
+	Rev   *string
 	Entry ArtifactEntry
 }
 

@@ -3,6 +3,15 @@ description: >
   This action is part of the Ace Archive project, and is used to host content
   submitted to Ace Archive.
 inputs:
+  mode:
+    description: >
+      The mode to operate in, either `tree` or `history`. In `tree` mode,
+      artifact files are pulled from the working tree and their syntax is
+      validated. In `history` mode, the entire commit history is traversed to
+      pull each version of each artifact file, and syntax errors are ignored
+      silently.
+    required: true
+    default: "tree"
   path-glob:
     description: >
       A shell glob for matching artifact files in the repository. The action

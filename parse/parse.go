@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"github.com/ipfs/go-cid"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -97,59 +96,6 @@ func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
 	}
 
 	return entry, nil
-}
-
-func Artifacts(workspacePath, pathGlob string) ([]Artifact, error) {
-	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
-	if err != nil {
-		return nil, err
-	}
-
-	repo, err := git.PlainOpen(workspacePath)
-	if err != nil {
-		return nil, err
-	}
-
-	artifacts := make([]Artifact, 0, len(artifactFilePaths))
-
-	for _, filePath := range artifactFilePaths {
-		relativePath, err := filepath.Rel(workspacePath, filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		objects, revs, err := FindRevisions(repo, relativePath)
-		if err != nil {
-			return nil, err
-		}
-
-		for revIndex, object := range objects {
-			artifactFile, err := object.Reader()
-			if err != nil {
-				return nil, err
-			}
-
-			frontMatter, err := extractFrontMatter(artifactFile)
-			if err != nil {
-				continue
-			}
-
-			entry, err := parseArtifactEntry(frontMatter)
-			if err != nil {
-				continue
-			}
-
-			artifacts = append(artifacts, Artifact{
-				Entry: entry,
-				Slug:  filepath.Base(filepath.Dir(relativePath)),
-				Rev:   revs[revIndex],
-			})
-		}
-	}
-
-	fmt.Printf("Found %d valid artifact files in history\n", len(artifacts))
-
-	return artifacts, nil
 }
 
 func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
