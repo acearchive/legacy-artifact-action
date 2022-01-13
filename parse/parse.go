@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	"github.com/ipfs/go-cid"
 	"gopkg.in/yaml.v2"
-	"os"
+	"io"
 	"path/filepath"
 	"strings"
 )
@@ -36,11 +37,8 @@ func isWhitespace(line string) bool {
 	return strings.TrimSpace(line) == ""
 }
 
-func extractFrontMatter(path string) (string, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
+func extractFrontMatter(file io.ReadCloser) (string, error) {
+	var err error
 
 	defer func() {
 		closeErr := file.Close()
@@ -107,57 +105,55 @@ func Artifacts(workspacePath, pathGlob string) ([]Artifact, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Found %d artifact files\n", len(artifactFilePaths))
+	repo, err := git.PlainOpen(workspacePath)
+	if err != nil {
+		return nil, err
+	}
 
-	artifacts := make([]Artifact, len(artifactFilePaths))
+	artifacts := make([]Artifact, 0, len(artifactFilePaths))
 
-	var artifactErrors []error
-
-	for entryIndex, filePath := range artifactFilePaths {
+	for _, filePath := range artifactFilePaths {
 		relativePath, err := filepath.Rel(workspacePath, filePath)
 		if err != nil {
 			return nil, err
 		}
 
-		frontMatter, err := extractFrontMatter(filePath)
+		revisions, err := FindRevisions(repo, relativePath)
 		if err != nil {
-			artifactErrors = append(artifactErrors, ArtifactParseError{
-				Path:   relativePath,
-				Reason: err.Error(),
+			return nil, err
+		}
+
+		for _, revision := range revisions {
+			artifactFile, err := revision.Reader()
+			if err != nil {
+				return nil, err
+			}
+
+			frontMatter, err := extractFrontMatter(artifactFile)
+			if err != nil {
+				continue
+			}
+
+			entry, err := parseArtifactEntry(frontMatter)
+			if err != nil {
+				continue
+			}
+
+			artifacts = append(artifacts, Artifact{
+				Entry: entry,
+				Slug:  filepath.Base(filepath.Dir(relativePath)),
 			})
-			continue
-		}
-
-		entry, err := parseArtifactEntry(frontMatter)
-		if err != nil {
-			artifactErrors = append(artifactErrors, ArtifactParseError{
-				Path:   relativePath,
-				Reason: err.Error(),
-			})
-			continue
-		}
-
-		if validateErr := Validate(entry, relativePath); validateErr != nil {
-			artifactErrors = append(artifactErrors, validateErr)
-		}
-
-		artifacts[entryIndex] = Artifact{
-			Entry: entry,
-			Slug:  filepath.Base(filepath.Dir(relativePath)),
 		}
 	}
 
-	if len(artifactErrors) != 0 {
-		LogArtifactErrors(artifactErrors)
-	} else {
-		fmt.Println("All artifact files are valid")
-	}
+	fmt.Printf("Found %d valid artifact files in history\n", len(artifacts))
 
 	return artifacts, nil
 }
 
 func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 	cidList := make([]cid.Cid, 0, len(artifacts))
+	contentSet := make(map[ContentKey]struct{}, len(artifacts))
 
 	for _, artifact := range artifacts {
 		currentCidList, err := artifact.AllCids()
@@ -165,10 +161,15 @@ func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 			return nil, err
 		}
 
-		cidList = append(cidList, currentCidList...)
+		for _, currentCid := range currentCidList {
+			if _, alreadyExists := contentSet[ContentKeyFromCid(currentCid)]; !alreadyExists {
+				contentSet[ContentKeyFromCid(currentCid)] = struct{}{}
+				cidList = append(cidList, currentCid)
+			}
+		}
 	}
 
-	fmt.Printf("Found %d CIDs in artifact files\n", len(cidList))
+	fmt.Printf("Found %d unique CIDs in artifact files\n", len(cidList))
 
 	return cidList, nil
 }

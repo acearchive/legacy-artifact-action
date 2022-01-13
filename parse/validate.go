@@ -30,7 +30,7 @@ func (e InvalidArtifactError) Error() string {
 	return builder.String()
 }
 
-func Validate(entry ArtifactEntry, filePath string) error {
+func validateEntry(entry ArtifactEntry, filePath string) error {
 	var reasons []InvalidArtifactReason
 
 	registerError := func(fieldPath, reason string) {
@@ -151,4 +151,58 @@ func LogArtifactErrors(artifactErrors []error) {
 	fmt.Println("::endgroup::")
 
 	os.Exit(1)
+}
+
+func Validate(workspacePath, pathGlob string) error {
+	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Found %d artifact files in tree\n", len(artifactFilePaths))
+
+	var artifactErrors []error
+
+	for _, filePath := range artifactFilePaths {
+		relativePath, err := filepath.Rel(workspacePath, filePath)
+		if err != nil {
+			return err
+		}
+
+		registerErr := func(reason error) {
+			artifactErrors = append(artifactErrors, ArtifactParseError{
+				Path:   relativePath,
+				Reason: reason.Error(),
+			})
+		}
+
+		artifactFile, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+
+		frontMatter, err := extractFrontMatter(artifactFile)
+		if err != nil {
+			registerErr(err)
+			continue
+		}
+
+		entry, err := parseArtifactEntry(frontMatter)
+		if err != nil {
+			registerErr(err)
+			continue
+		}
+
+		if validateErr := validateEntry(entry, relativePath); validateErr != nil {
+			artifactErrors = append(artifactErrors, validateErr)
+		}
+	}
+
+	if len(artifactErrors) != 0 {
+		LogArtifactErrors(artifactErrors)
+	} else {
+		fmt.Println("All artifact files in tree are valid")
+	}
+
+	return nil
 }

@@ -20,6 +20,10 @@ func run() error {
 	pinEndpoint := os.Getenv("INPUT_PIN-ENDPOINT")
 	pinToken := os.Getenv("INPUT_PIN-TOKEN")
 
+	if err := parse.Validate(workspacePath, pathGlob); err != nil {
+		return err
+	}
+
 	artifacts, err := parse.Artifacts(workspacePath, pathGlob)
 	if err != nil {
 		return err
