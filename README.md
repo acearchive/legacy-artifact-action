@@ -23,6 +23,29 @@ could be used to write CI tooling for hosting the content anywhere. It's
 possible to upload content to both Web3.Storage and a pinning service by
 specifying all the necessary input parameters.
 
+## Previous versions of artifacts
+
+Sometimes, the contents of an artifact file change. For example, a
+transcription might be replaced with a more accurate one. However, because IPFS
+uses content-based addressing, links to files don't always necessarily point to
+the latest version of that file. To ensure that these links never go dead, it's
+prudent to not just host the content *currently* in Ace Archive, but all the
+content that's *ever* been in Ace Archive. Because artifact files are version
+controlled using git, we can do this fairly easily.
+
+Out of the box, this action traverses the git commit history and parses every
+version of every artifact file in the history of the repository. You can
+control how much of the history you want to include by configuring the
+`fetch-depth` input of the
+[actions/checkout](https://github.com/actions/checkout) action. The default
+behavior is to only fetch a single commit, but you can set `fetch-depth: 0` to
+fetch the entire commit history.
+
+Something important to note is that when this action validates the syntax of
+artifact files, it only validates the syntax for the current (HEAD) versions.
+If a previous version of an artifact file has invalid syntax, it is just
+skipped silently.
+
 ## Web3.Storage
 
 To upload content to Web3.Storage, an IPFS node must be running and you must
@@ -42,15 +65,21 @@ already pinned to your account in a previous run.
 ## Output
 
 The JSON output of this action looks like this. It mirrors the schema of
-artifact files, with the addition of the `slug` field containing the URL slug
-of the artifact. Fields which are optional in the artifact file are serialized
-as `null` in the JSON output.
+artifact files, with the addition of the following fields:
+
+- `slug` contains the URL slug of the artifact
+- `rev` contains the git commit hash of the commit the artifact file was pulled
+  from
+
+Fields which are optional in the artifact file are serialized as `null` in the
+JSON output.
 
 ```json
 {
   "artifacts": [
     {
       "slug": "orlando-the-asexual-manifesto",
+      "rev": "43470f27477e20154be40a6cb3f8ee444ffc0467",
       "title": "<em>The Asexual Manifesto</em>",
       "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
       "longDescription": null,
