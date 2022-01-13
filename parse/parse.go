@@ -118,13 +118,13 @@ func Artifacts(workspacePath, pathGlob string) ([]Artifact, error) {
 			return nil, err
 		}
 
-		revisions, err := FindRevisions(repo, relativePath)
+		objects, revs, err := FindRevisions(repo, relativePath)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, revision := range revisions {
-			artifactFile, err := revision.Reader()
+		for revIndex, object := range objects {
+			artifactFile, err := object.Reader()
 			if err != nil {
 				return nil, err
 			}
@@ -142,6 +142,7 @@ func Artifacts(workspacePath, pathGlob string) ([]Artifact, error) {
 			artifacts = append(artifacts, Artifact{
 				Entry: entry,
 				Slug:  filepath.Base(filepath.Dir(relativePath)),
+				Rev:   revs[revIndex],
 			})
 		}
 	}

@@ -5,13 +5,11 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-func FindRevisions(repo *git.Repository, relativePath string) ([]object.File, error) {
+func FindRevisions(repo *git.Repository, relativePath string) (files []object.File, revs []string, err error) {
 	commits, err := repo.Log(&git.LogOptions{FileName: &relativePath})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	var files []object.File
 
 	commitIter := func(commit *object.Commit) error {
 		file, err := commit.File(relativePath)
@@ -20,13 +18,14 @@ func FindRevisions(repo *git.Repository, relativePath string) ([]object.File, er
 		}
 
 		files = append(files, *file)
+		revs = append(revs, commit.Hash.String())
 
 		return nil
 	}
 
 	if err := commits.ForEach(commitIter); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return files, nil
+	return files, revs, nil
 }

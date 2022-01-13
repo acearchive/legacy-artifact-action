@@ -14,6 +14,7 @@ type ArtifactFileOutput struct {
 
 type ArtifactOutput struct {
 	Slug            string               `json:"slug"`
+	Rev             string               `json:"rev"`
 	Title           string               `json:"title"`
 	Description     string               `json:"description"`
 	LongDescription *string              `json:"longDescription"`
@@ -44,6 +45,7 @@ func Marshal(entries []parse.Artifact) (string, error) {
 
 		artifacts[entryIndex] = ArtifactOutput{
 			Slug:            artifact.Slug,
+			Rev:             artifact.Rev,
 			Title:           artifact.Entry.Title,
 			Description:     artifact.Entry.Description,
 			LongDescription: artifact.Entry.LongDescription,
