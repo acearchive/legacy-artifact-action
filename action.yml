@@ -47,6 +47,8 @@ outputs:
 runs:
   using: "docker"
   image: "Dockerfile"
+  args:
+    - "--action"
 branding:
   icon: "archive"
   color: "purple"

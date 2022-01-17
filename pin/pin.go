@@ -2,7 +2,7 @@ package pin
 
 import (
 	"context"
-	"fmt"
+	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	pinclient "github.com/ipfs/go-pinning-service-http-client"
@@ -23,7 +23,7 @@ func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid) error {
 		return err
 	}
 
-	fmt.Printf("Found %d pins\n", len(existingContent))
+	logger.Printf("Found %d pins\n", len(existingContent))
 
 	filesToUpload := make([]cid.Cid, 0, len(cidList))
 
@@ -33,11 +33,11 @@ func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid) error {
 		}
 	}
 
-	fmt.Printf("Skipping %d files that are already pinned\n", len(cidList)-len(filesToUpload))
-	fmt.Printf("Pinning %d files\n", len(filesToUpload))
+	logger.Printf("Skipping %d files that are already pinned\n", len(cidList)-len(filesToUpload))
+	logger.Printf("Pinning %d files\n", len(filesToUpload))
 
 	for currentIndex, currentCid := range filesToUpload {
-		fmt.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
+		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 		if _, err := client.Add(ctx, currentCid); err != nil {
 			return err
 		}

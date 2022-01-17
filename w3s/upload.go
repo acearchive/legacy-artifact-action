@@ -2,7 +2,7 @@ package w3s
 
 import (
 	"context"
-	"fmt"
+	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
@@ -24,7 +24,7 @@ func Upload(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error
 		return err
 	}
 
-	fmt.Printf("Found %d files in Web3.Storage\n", len(existingCids))
+	logger.Printf("Found %d files in Web3.Storage\n", len(existingCids))
 
 	filesToUpload := make([]cid.Cid, 0, len(cidList))
 
@@ -38,11 +38,11 @@ func Upload(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error
 		}
 	}
 
-	fmt.Printf("Skipping %d files that are already in Web3.Storage\n", len(cidList)-len(filesToUpload))
-	fmt.Printf("Uploading %d files\n", len(filesToUpload))
+	logger.Printf("Skipping %d files that are already in Web3.Storage\n", len(cidList)-len(filesToUpload))
+	logger.Printf("Uploading %d files\n", len(filesToUpload))
 
 	for currentIndex, currentCid := range filesToUpload {
-		fmt.Printf("Uploading (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
+		logger.Printf("Uploading (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 
 		car, err := PackCar(ctx, ipfsClient, currentCid)
 		if err != nil {

@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"fmt"
+	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"path/filepath"
@@ -91,7 +91,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 		})
 	}
 
-	fmt.Printf("Found %d valid artifact files in history\n", len(artifacts))
+	logger.Printf("Found %d valid artifact files in history\n", len(artifacts))
 
 	return artifacts, nil
 }

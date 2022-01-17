@@ -1,9 +1,9 @@
 # artifact-action
 
-This repository is a GitHub Action which provides tooling for hosting content
-contributed to [Ace Archive](https://acearchive.lgbt).
+This repository is a GitHub Action and CLI tool which provides tooling for
+hosting content contributed to [Ace Archive](https://acearchive.lgbt).
 
-This action parses a repository for [artifact
+This tool parses a repository for [artifact
 files](https://acearchive.lgbt/docs/contributing/artifact-files/), validates
 their syntax, and outputs a JSON document containing metadata about each
 artifact, including the [IPFS
@@ -13,8 +13,8 @@ This action is used by
 [acearchive/acearchive.lgbt](https://github.com/acearchive/acearchive.lgbt) to
 upload all contributed content to [Web3.Storage](https://web3.storage), but it
 can be used by anyone to help host the content on Ace Archive on the IPFS
-network. This action can also be used with forks of the repository as long as
-the format of the artifact files is the same.
+network. This action can also be used with forks of the Ace Archive repository
+as long as the format of the artifact files is the same.
 
 Out of the box, this action supports uploading content to Web3.Storage or any
 pinning service that supports the [IPFS pinning service
@@ -77,6 +77,35 @@ support the standardized API may use a separate endpoint for it. For example,
 the endpoint for [Pinata](https://www.pinata.cloud/) is
 `https://api.pinata.cloud/psa`. The action is smart enough to skip any files
 already pinned to your account in a previous run.
+
+## CLI
+
+In addition to being used as a GitHub action, this tool provides a CLI. To use
+the CLI, you must clone the Ace Archive repository yourself.
+
+```
+Host content from Ace Archive on the IPFS network.
+
+To upload content to Web3.Storage, you must specify `--w3s-token` and
+`--ipfs-api`.
+
+To pin content with an IPFS pinning service, you must specify `--pin-endpoint`
+and `--pin-token`.
+
+Usage:
+  artifact-action [flags]
+
+Flags:
+  -h, --help                    help for artifact-action
+      --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
+      --json                    Produce JSON output
+  -m, --mode string             The mode to operate in, either "tree" or "history" (default "tree")
+      --path-glob glob          A relative path glob for locating artifact files (default "content/archive/*/index.md")
+      --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
+      --pin-token token         The bearer token for the configured IPFS pinning service
+  -r, --repo path               The path of the git repo containing the artifact files (default "/home/frawley/artifact-action")
+      --w3s-token token         The secret API token for Web3.Storage
+```
 
 ## Output
 

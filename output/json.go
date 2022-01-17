@@ -5,6 +5,8 @@ import (
 	"github.com/frawleyskid/w3s-upload/parse"
 )
 
+const prettyJsonIndent = "  "
+
 type ArtifactFileOutput struct {
 	Name      string  `json:"name"`
 	MediaType *string `json:"mediaType"`
@@ -30,7 +32,7 @@ type Output struct {
 	Artifacts []ArtifactOutput `json:"artifacts"`
 }
 
-func Marshal(entries []parse.Artifact) (string, error) {
+func Marshal(entries []parse.Artifact, pretty bool) (string, error) {
 	artifacts := make([]ArtifactOutput, len(entries))
 	for entryIndex, artifact := range entries {
 		files := make([]ArtifactFileOutput, len(artifact.Entry.Files))
@@ -60,7 +62,17 @@ func Marshal(entries []parse.Artifact) (string, error) {
 
 	output := Output{Artifacts: artifacts}
 
-	marshalledOutput, err := json.Marshal(output)
+	var (
+		marshalledOutput []byte
+		err              error
+	)
+
+	if pretty {
+		marshalledOutput, err = json.MarshalIndent(output, "", prettyJsonIndent)
+	} else {
+		marshalledOutput, err = json.Marshal(output)
+	}
+
 	if err != nil {
 		return "", err
 	}

@@ -1,7 +1,9 @@
 package parse
 
 import (
+	"errors"
 	"fmt"
+	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/ipfs/go-cid"
 	"mime"
 	"os"
@@ -10,6 +12,8 @@ import (
 )
 
 const indentString = "    "
+
+var ErrInvalidArtifactFiles = errors.New("one or more artifact files are invalid")
 
 type InvalidArtifactReason struct {
 	FieldPath string
@@ -147,15 +151,8 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 }
 
 func LogArtifactErrors(artifactErrors []error) {
-	fmt.Println("::error::One or more artifact files are invalid")
-	fmt.Println("::group::Artifact file errors")
-
-	for _, err := range artifactErrors {
-		fmt.Println(err.Error())
-	}
-
-	fmt.Println("::endgroup::")
-
+	logger.LogError(ErrInvalidArtifactFiles)
+	logger.LogErrorGroup("Artifact file errors:", artifactErrors)
 	os.Exit(1)
 }
 
@@ -165,7 +162,7 @@ func Tree(workspacePath, pathGlob string) ([]Artifact, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Found %d artifact files in tree\n", len(artifactFilePaths))
+	logger.Printf("Found %d artifact files in tree\n", len(artifactFilePaths))
 
 	var artifactErrors []error
 
@@ -215,7 +212,7 @@ func Tree(workspacePath, pathGlob string) ([]Artifact, error) {
 	if len(artifactErrors) != 0 {
 		LogArtifactErrors(artifactErrors)
 	} else {
-		fmt.Println("All artifact files in tree are valid")
+		logger.Println("All artifact files in tree are valid")
 	}
 
 	return artifacts, nil

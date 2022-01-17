@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/ipfs/go-cid"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -116,7 +117,7 @@ func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 		}
 	}
 
-	fmt.Printf("Found %d unique CIDs in artifact files\n", len(cidList))
+	logger.Printf("Found %d unique CIDs in artifact files\n", len(cidList))
 
 	return cidList, nil
 }
