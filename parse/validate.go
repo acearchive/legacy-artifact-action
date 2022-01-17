@@ -68,13 +68,13 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		registerError("decades", "can not be empty")
 	}
 
-	earliestDecade := entry.FromYear - (entry.FromYear % 10)
+	earliestDecade := entry.FromYear - (entry.FromYear % 10) //nolint:gomnd
 	remainingDecades := make(map[int]struct{})
 
 	if entry.ToYear == nil {
 		remainingDecades[earliestDecade] = struct{}{}
 	} else {
-		latestDecade := *entry.ToYear - (*entry.ToYear % 10)
+		latestDecade := *entry.ToYear - (*entry.ToYear % 10) //nolint:gomnd
 		for expectedDecade := earliestDecade; expectedDecade <= latestDecade; expectedDecade += 10 {
 			remainingDecades[expectedDecade] = struct{}{}
 		}
@@ -96,7 +96,7 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		}
 
 		if entry.ToYear != nil {
-			if latestDecade := *entry.ToYear - (*entry.ToYear % 10); decade > latestDecade {
+			if latestDecade := *entry.ToYear - (*entry.ToYear % 10); decade > latestDecade { //nolint:gomnd
 				registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes after the decade of `toYear`")
 				continue
 			}

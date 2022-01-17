@@ -68,7 +68,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 
 	artifacts := make([]Artifact, 0, len(artifactRevisions))
 
-	for i, revision := range artifactRevisions {
+	for revIndex, revision := range artifactRevisions {
 		artifactFile, err := revision.File.Reader()
 		if err != nil {
 			return nil, err
@@ -87,7 +87,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 		artifacts = append(artifacts, Artifact{
 			Entry: entry,
 			Slug:  filepath.Base(filepath.Dir(revision.File.Name)),
-			Rev:   &artifactRevisions[i].Rev,
+			Rev:   &artifactRevisions[revIndex].Rev,
 		})
 	}
 
