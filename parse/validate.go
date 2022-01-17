@@ -82,6 +82,10 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 			continue
 		}
 
+		if entry.FromYear == 0 || (entry.ToYear != nil && *entry.ToYear == 0) {
+			continue
+		}
+
 		if decade < earliestDecade {
 			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes before the decade of `fromYear`")
 			continue
@@ -102,8 +106,10 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		delete(remainingDecades, decade)
 	}
 
-	for expectedButNotFoundDecade := range remainingDecades {
-		registerError("decades", fmt.Sprintf("should contain '%d' but doesn't", expectedButNotFoundDecade))
+	if entry.FromYear != 0 && (entry.ToYear == nil || *entry.ToYear != 0) {
+		for expectedButNotFoundDecade := range remainingDecades {
+			registerError("decades", fmt.Sprintf("should contain '%d' but doesn't", expectedButNotFoundDecade))
+		}
 	}
 
 	if len(entry.Files) == 0 {
