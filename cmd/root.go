@@ -17,12 +17,7 @@ import (
 var ErrInvalidMode = errors.New("invalid mode")
 
 func init() {
-	workDir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-
-	rootCmd.Flags().StringP("repo", "r", workDir, "The `path` of the git repo containing the artifact files")
+	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
 	rootCmd.Flags().StringP("mode", "m", "tree", "The mode to operate in, either \"tree\" or \"history\"")
 	rootCmd.Flags().String("path-glob", "content/archive/*/index.md", "A relative path `glob` for locating artifact files")
 	rootCmd.Flags().String("w3s-token", "", "The secret API `token` for Web3.Storage")

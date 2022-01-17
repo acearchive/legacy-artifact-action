@@ -103,7 +103,7 @@ Flags:
       --path-glob glob          A relative path glob for locating artifact files (default "content/archive/*/index.md")
       --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
       --pin-token token         The bearer token for the configured IPFS pinning service
-  -r, --repo path               The path of the git repo containing the artifact files (default "/home/frawley/artifact-action")
+  -r, --repo path               The path of the git repo containing the artifact files (default ".")
       --w3s-token token         The secret API token for Web3.Storage
 ```
 
