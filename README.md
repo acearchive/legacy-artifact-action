@@ -125,6 +125,7 @@ JSON output.
     {
       "slug": "orlando-the-asexual-manifesto",
       "rev": "43470f27477e20154be40a6cb3f8ee444ffc0467",
+      "version": 1,
       "title": "<em>The Asexual Manifesto</em>",
       "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
       "longDescription": null,

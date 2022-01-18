@@ -44,6 +44,10 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		})
 	}
 
+	if entry.Version != CurrentArtifactVersion {
+		registerError("version", fmt.Sprintf("must be the current version (%d)", CurrentArtifactVersion))
+	}
+
 	if entry.Title == "" {
 		registerError("title", "can not be empty")
 	}

@@ -2,6 +2,8 @@ package parse
 
 import "github.com/ipfs/go-cid"
 
+const CurrentArtifactVersion = 1
+
 type Artifact struct {
 	Slug  string
 	Rev   *string
@@ -16,6 +18,7 @@ type ArtifactFileEntry struct {
 }
 
 type ArtifactEntry struct {
+	Version         int                 `yaml:"version"`
 	Title           string              `yaml:"title"`
 	Description     string              `yaml:"description"`
 	LongDescription *string             `yaml:"longDescription"`
