@@ -9,6 +9,7 @@ import (
 
 type Revision struct {
 	File object.File
+	Path string
 	Rev  string
 }
 
@@ -45,6 +46,7 @@ func findRevisions(workspacePath, pathGlob string) ([]Revision, error) {
 
 				revs = append(revs, Revision{
 					File: *file,
+					Path: stat.Name,
 					Rev:  commit.Hash.String(),
 				})
 			}
@@ -84,6 +86,10 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 			continue
 		}
 
+		if err := validateEntry(entry, revision.Path); err != nil {
+			continue
+		}
+
 		artifacts = append(artifacts, Artifact{
 			Entry: entry,
 			Slug:  filepath.Base(filepath.Dir(revision.File.Name)),
@@ -91,7 +97,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 		})
 	}
 
-	logger.Printf("Found %d valid artifact files in history\n", len(artifacts))
+	logger.Printf("Found %d valid artifact files in the history\n", len(artifacts))
 
 	return artifacts, nil
 }
