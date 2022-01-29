@@ -17,12 +17,18 @@ type ArtifactFileEntry struct {
 	Cid       string  `yaml:"cid"`
 }
 
+type ArtifactLinkEntry struct {
+	Name string `yaml:"name"`
+	Url  string `yaml:"url"`
+}
+
 type ArtifactEntry struct {
 	Version         int                 `yaml:"version"`
 	Title           string              `yaml:"title"`
 	Description     string              `yaml:"description"`
 	LongDescription *string             `yaml:"longDescription"`
 	Files           []ArtifactFileEntry `yaml:"files"`
+	Links           []ArtifactLinkEntry `yaml:"links"`
 	People          []string            `yaml:"people"`
 	Identities      []string            `yaml:"identities"`
 	FromYear        int                 `yaml:"fromYear"`

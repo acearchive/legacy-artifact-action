@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ipfs/go-cid"
 	"mime"
+	"net/url"
 	"path/filepath"
 	"strings"
 )
@@ -118,8 +119,8 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		}
 	}
 
-	if len(entry.Files) == 0 {
-		registerError("files", "can not be empty")
+	if len(entry.Files) == 0 && len(entry.Links) == 0 {
+		registerError("files", "and `links` can not both be empty")
 	}
 
 	for fileIndex, fileEntry := range entry.Files {
@@ -139,6 +140,18 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 
 		if fileEntry.Filename != nil && filepath.Ext(*fileEntry.Filename) == "" {
 			registerError(fmt.Sprintf("files[%d].filename", fileIndex), "does not have a file extension")
+		}
+	}
+
+	for linkIndex, linkEntry := range entry.Links {
+		if linkEntry.Name == "" {
+			registerError(fmt.Sprintf("links[%d].name", linkIndex), "can not be empty")
+		}
+
+		if linkUrl, err := url.Parse(linkEntry.Url); err != nil {
+			registerError(fmt.Sprintf("links[%d].url", linkIndex), "is not a valid URL")
+		} else if linkUrl.Scheme != "https" {
+			registerError(fmt.Sprintf("links[%d].url", linkIndex), "is not an HTTPS URL")
 		}
 	}
 

@@ -14,6 +14,11 @@ type ArtifactFileOutput struct {
 	Cid       string  `json:"cid"`
 }
 
+type ArtifactLinkOutput struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
 type ArtifactOutput struct {
 	Slug            string               `json:"slug"`
 	Rev             *string              `json:"rev"`
@@ -22,6 +27,7 @@ type ArtifactOutput struct {
 	Description     string               `json:"description"`
 	LongDescription *string              `json:"longDescription"`
 	Files           []ArtifactFileOutput `json:"files"`
+	Links           []ArtifactLinkOutput `json:"links"`
 	People          []string             `json:"people"`
 	Identities      []string             `json:"identities"`
 	FromYear        int                  `json:"fromYear"`
@@ -46,6 +52,14 @@ func Marshal(entries []parse.Artifact, pretty bool) (string, error) {
 			}
 		}
 
+		links := make([]ArtifactLinkOutput, len(artifact.Entry.Links))
+		for linkIndex, linkEntry := range artifact.Entry.Links {
+			links[linkIndex] = ArtifactLinkOutput{
+				Name: linkEntry.Name,
+				Url:  linkEntry.Url,
+			}
+		}
+
 		artifacts[entryIndex] = ArtifactOutput{
 			Slug:            artifact.Slug,
 			Rev:             artifact.Rev,
@@ -54,6 +68,7 @@ func Marshal(entries []parse.Artifact, pretty bool) (string, error) {
 			Description:     artifact.Entry.Description,
 			LongDescription: artifact.Entry.LongDescription,
 			Files:           files,
+			Links:           links,
 			People:          artifact.Entry.People,
 			Identities:      artifact.Entry.Identities,
 			FromYear:        artifact.Entry.FromYear,
