@@ -124,7 +124,7 @@ JSON output.
   "artifacts": [
     {
       "slug": "orlando-the-asexual-manifesto",
-      "rev": "43470f27477e20154be40a6cb3f8ee444ffc0467",
+      "rev": "b56a47711ce2c5f148f0e7f42c930c3bfc664bc1",
       "version": 1,
       "title": "<em>The Asexual Manifesto</em>",
       "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
@@ -141,6 +141,12 @@ JSON output.
           "mediaType": "text/html",
           "filename": "the-asexual-manifesto-transcript.html",
           "cid": "bafkreie5hknsonewqxuyf6vzlauhn2qwm2og5yjcqrltv5yumyqdvdm4sm"
+        }
+      ],
+      "links": [
+        {
+          "name": "Background and Context",
+          "url": "https://asexualagenda.wordpress.com/2019/08/01/lisa-orlando-author-of-the-asexual-manifesto-1972/"
         }
       ],
       "people": [
