@@ -40,24 +40,23 @@ commits are pushed or pull requests are merged.
 
 ### History mode
 
-Sometimes, the contents of an artifact file change. For example, a file
+Sometimes, the contents of an artifact file changes. For example, a file
 containing a transcription might be replaced with a more accurate one. However,
 because IPFS uses content-based addressing, links to files don't always
-necessarily point to the latest version of that file. To ensure that these
-links never go dead, it's prudent to not just host the content *currently* in
-Ace Archive, but all the content that's *ever* been in Ace Archive. Because
+necessarily point to the latest version of that file. To ensure that old links
+never go dead, it's prudent to not just host the content *currently* in Ace
+Archive, but all the content that's *ever* been in Ace Archive. Because
 artifact files are version controlled using git, we can do this fairly easily.
 
 In `history` mode, the commit history of the repository is traversed and each
 version of each artifact file is pulled from the commit history. However, in
-this mode, the syntax of artifact files are not validated, and invalid artifact
-files are skipped silently. Otherwise, an invalid artifact file that is
-committed to the repository and then fixed in a subsequent commit would cause
-the action to fail.
+this mode, invalid artifact files are skipped silently. Otherwise, an invalid
+artifact file that is committed to the repository and then fixed in a
+subsequent commit would cause the action to fail, which we don't want.
 
 This mode is useful for hosting artifacts from the archive in bulk, including
-previous versions of artifact files containing files that are no longer in the
-working tree. Keep in mind that, by default,
+previous versions of artifact files that are no longer in the working tree.
+Keep in mind that, by default,
 [actions/checkout](https://github.com/actions/checkout) only fetches one
 commit, so you'll want to set `fetch-depth: 0` in its input parameters to fetch
 the entire commit history.
@@ -112,12 +111,13 @@ Flags:
 The JSON output of this action looks like this. It mirrors the schema of
 artifact files, with the addition of the following fields:
 
-- `slug` contains the URL slug of the artifact.
+- `slug` contains the URL slug of the artifact, which is the second-to-last
+  path component in the path of the artifact file.
 - `rev` contains the git commit hash of the commit the artifact file was pulled
   from. In `tree` mode, this field is always `null`.
 
-Fields which are optional in the artifact file are serialized as `null` in the
-JSON output.
+Fields which are optional in artifact files are serialized as `null` in the
+JSON output when they're omitted.
 
 ```json
 {
@@ -168,7 +168,7 @@ JSON output.
 
 ## Examples
 
-### Just get the JSON output
+### Just get the JSON output (tree mode)
 
 ```yaml
 jobs:
@@ -183,6 +183,28 @@ jobs:
       - name: "Get artifacts"
         id: get_artifacts
         uses: acearchive/artifact-action@main
+      - name: "Upload artifacts"
+        run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
+```
+
+### Just get the JSON output (history mode)
+
+```yaml
+jobs:
+  archive:
+    name: "Upload artifacts"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v2
+        with:
+          repository: "acearchive/acearchive.lgbt"
+          fetch-depth: 0
+      - name: "Get artifacts"
+        id: get_artifacts
+        uses: acearchive/artifact-action@main
+        with:
+            mode: history
       - name: "Upload artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
