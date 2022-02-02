@@ -7,13 +7,13 @@ import (
 )
 
 func Printf(format string, a ...interface{}) {
-	if viper.GetBool("action") || !viper.GetBool("json") {
+	if viper.GetBool("action") || viper.GetString("output") == "summary" {
 		fmt.Printf(format, a...)
 	}
 }
 
 func Println(a ...interface{}) {
-	if viper.GetBool("action") || !viper.GetBool("json") {
+	if viper.GetBool("action") || viper.GetString("output") == "summary" {
 		fmt.Println(a...)
 	}
 }

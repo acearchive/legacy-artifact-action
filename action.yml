@@ -44,6 +44,9 @@ outputs:
   artifacts:
     description: >
       A JSON document describing the artifacts in the repository.
+  cids:
+    description: >
+      A deduplicated JSON array of the CIDs contained in artifacts in the repository.
 runs:
   using: "docker"
   image: "Dockerfile"

@@ -97,8 +97,8 @@ Usage:
 Flags:
   -h, --help                    help for artifact-action
       --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
-      --json                    Produce JSON output
   -m, --mode string             The mode to operate in, either "tree" or "history" (default "tree")
+  -o, --output string           The output to produce, either "artifacts", "cids", or "summary" (default "summary")
       --path-glob glob          A relative path glob for locating artifact files (default "content/archive/*/index.md")
       --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
       --pin-token token         The bearer token for the configured IPFS pinning service
@@ -108,7 +108,18 @@ Flags:
 
 ## Output
 
-The JSON output of this action looks like this. It mirrors the schema of
+This tool produces two JSON outputs:
+
+- `artifacts` is JSON document describing all the artifacts in the repository.
+- `cids` is a JSON array containing a deduplicated list of all the CIDs
+  contained in artifacts in the repository.
+
+The `cids` output is provided for convenience if you just want to re-host all
+the content in the archive and don't need artifact metadata. In this list, CIDs
+are deduplicated by their multihash, so if the repository contains a v0 CID and
+a v1 CID with the same multihash, only one will be returned.
+
+The `artifacts` output looks like the example below. It mirrors the schema of
 artifact files, with the addition of the following fields:
 
 - `slug` contains the URL slug of the artifact, which is the second-to-last
@@ -183,7 +194,7 @@ jobs:
       - name: "Get artifacts"
         id: get_artifacts
         uses: acearchive/artifact-action@main
-      - name: "Upload artifacts"
+      - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 
@@ -205,7 +216,7 @@ jobs:
         uses: acearchive/artifact-action@main
         with:
             mode: history
-      - name: "Upload artifacts"
+      - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 

@@ -14,7 +14,9 @@ import (
 	"os"
 )
 
-var ErrInvalidMode = errors.New("invalid mode")
+var (
+	ErrInvalidMode = errors.New("invalid mode parameter")
+)
 
 func init() {
 	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
@@ -24,7 +26,7 @@ func init() {
 	rootCmd.Flags().String("ipfs-api", "/dns/localhost/tcp/5001/http", "The `multiaddr` of your IPFS node")
 	rootCmd.Flags().String("pin-endpoint", "", "The URL of the IPFS pinning service API `endpoint` to use")
 	rootCmd.Flags().String("pin-token", "", "The bearer `token` for the configured IPFS pinning service")
-	rootCmd.Flags().Bool("json", false, "Produce JSON output")
+	rootCmd.Flags().StringP("output", "o", "summary", "The output to produce, either \"artifacts\", \"cids\", or \"summary\"")
 	rootCmd.Flags().Bool("action", false, "Run this tool as a GitHub Action")
 
 	if err := rootCmd.Flags().MarkHidden("action"); err != nil {
@@ -77,7 +79,7 @@ var rootCmd = &cobra.Command{
 			err       error
 		)
 
-		switch viper.GetString("mode") {
+		switch mode := viper.GetString("mode"); mode {
 		case "tree":
 			artifacts, err = parse.Tree(viper.GetString("repo"), viper.GetString("path-glob"))
 			if err != nil {
@@ -89,22 +91,15 @@ var rootCmd = &cobra.Command{
 				return err
 			}
 		default:
-			return fmt.Errorf("%w: %s", ErrInvalidMode, viper.GetString("mode"))
-		}
-
-		jsonOutput, err := output.Marshal(artifacts, !viper.GetBool("action"))
-		if err != nil {
-			return err
-		}
-
-		if viper.GetBool("action") {
-			fmt.Printf("::set-output name=artifacts::%s\n", jsonOutput)
-		} else if viper.GetBool("json") {
-			fmt.Println(jsonOutput)
+			return fmt.Errorf("%w: %s", ErrInvalidMode, mode)
 		}
 
 		cidList, err := parse.ExtractCids(artifacts)
 		if err != nil {
+			return err
+		}
+
+		if err := output.Print(artifacts, cidList); err != nil {
 			return err
 		}
 
