@@ -141,7 +141,7 @@ objects with the following fields:
       "rev": "1f870aa0f01cc7541286755fc1b7233355e82e43",
       "entry": {
         "version": 1,
-        "title": "<em>The Asexual Manifesto<em>",
+        "title": "<em>The Asexual Manifesto</em>",
         "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
         "longDescription": null,
         "files": [
