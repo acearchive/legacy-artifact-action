@@ -99,12 +99,27 @@ func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
 	return entry, nil
 }
 
+func (e Artifact) allCids() ([]cid.Cid, error) {
+	cidList := make([]cid.Cid, len(e.Entry.Files))
+
+	for fileIndex, artifactFile := range e.Entry.Files {
+		artifactCid, err := cid.Parse(artifactFile.Cid)
+		if err != nil {
+			return nil, err
+		}
+
+		cidList[fileIndex] = artifactCid
+	}
+
+	return cidList, nil
+}
+
 func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 	cidList := make([]cid.Cid, 0, len(artifacts))
 	contentSet := make(map[ContentKey]struct{}, len(artifacts))
 
 	for _, artifact := range artifacts {
-		currentCidList, err := artifact.AllCids()
+		currentCidList, err := artifact.allCids()
 		if err != nil {
 			return nil, err
 		}

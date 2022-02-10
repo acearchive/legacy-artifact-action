@@ -119,60 +119,69 @@ the content in the archive and don't need artifact metadata. In this list, CIDs
 are deduplicated by their multihash, so if the repository contains a v0 CID and
 a v1 CID with the same multihash, only one will be returned.
 
-The `artifacts` output looks like the example below. It mirrors the schema of
-artifact files, with the addition of the following fields:
+The `artifacts` output looks like the example below. It contains an array of
+objects with the following fields:
 
-- `slug` contains the URL slug of the artifact, which is the second-to-last
-  path component in the path of the artifact file.
-- `rev` contains the git commit hash of the commit the artifact file was pulled
-  from. In `tree` mode, this field is always `null`.
-
-Fields which are optional in artifact files are serialized as `null` in the
-JSON output when they're omitted.
+- `path` is the relative path of the artifact file from the root of the
+  repository.
+- `slug` is the URL slug of the artifact, which is the second-to-last path
+  component in the path of the artifact file.
+- `rev` is the git commit hash of the commit the artifact file was pulled from.
+  In `tree` mode, this field is always `null`.
+- `entry` contains the actual contents of the artifact file. It mirrors the
+  schema of artifact files, with fields that are optional in artifact files
+  serialized as `null` in the JSON output when they're omitted.
 
 ```json
 {
   "artifacts": [
     {
+      "path": "content/archive/orlando-the-asexual-manifesto/index.md",
       "slug": "orlando-the-asexual-manifesto",
-      "rev": "b56a47711ce2c5f148f0e7f42c930c3bfc664bc1",
-      "version": 1,
-      "title": "<em>The Asexual Manifesto</em>",
-      "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
-      "longDescription": null,
-      "files": [
-        {
-          "name": "The Asexual Manifesto",
-          "mediaType": "application/pdf",
-          "filename": "the-asexual-manifesto.pdf",
-          "cid": "bafybeihsf4562gmmyoya7eh5buxv65lqcdoil3wsi5jf5fceskap7yzooi"
-        },
-        {
-          "name": "The Asexual Manifesto (Transcript)",
-          "mediaType": "text/html",
-          "filename": "the-asexual-manifesto-transcript.html",
-          "cid": "bafkreie5hknsonewqxuyf6vzlauhn2qwm2og5yjcqrltv5yumyqdvdm4sm"
-        }
-      ],
-      "links": [
-        {
-          "name": "Background and Context",
-          "url": "https://asexualagenda.wordpress.com/2019/08/01/lisa-orlando-author-of-the-asexual-manifesto-1972/"
-        }
-      ],
-      "people": [
-        "Lisa Orlando",
-        "Barbara Getz"
-      ],
-      "identities": [
-        "asexual"
-      ],
-      "fromYear": 1972,
-      "toYear": null,
-      "decades": [
-        1970
-      ]
-    }
+      "rev": "1f870aa0f01cc7541286755fc1b7233355e82e43",
+      "entry": {
+        "version": 1,
+        "title": "<em>The Asexual Manifesto<em>",
+        "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
+        "longDescription": null,
+        "files": [
+          {
+            "name": "Digital Scan",
+            "mediaType": "application/pdf",
+            "filename": "the-asexual-manifesto.pdf",
+            "cid": "bafybeihsf4562gmmyoya7eh5buxv65lqcdoil3wsi5jf5fceskap7yzooi"
+          },
+          {
+            "name": "Transcript",
+            "mediaType": "text/html",
+            "filename": null,
+            "cid": "bafybeiakup4b3mjmzw7mjq3ptnv3dqusdebskra2jic73u74nhbizgu3wi"
+          }
+        ],
+        "links": [
+          {
+            "name": "Internet Archive",
+            "url": "https://archive.org/details/asexualmanifestolisaorlando"
+          },
+          {
+            "name": "Background and Context",
+            "url": "https://asexualagenda.wordpress.com/2019/08/01/lisa-orlando-author-of-the-asexual-manifesto-1972/"
+          }
+        ],
+        "people": [
+          "Lisa Orlando",
+          "Barbara Getz"
+        ],
+        "identities": [
+          "asexual"
+        ],
+        "fromYear": 1972,
+        "toYear": null,
+        "decades": [
+          1970
+        ]
+      }
+    },
   ]
 }
 ```

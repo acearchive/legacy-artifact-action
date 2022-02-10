@@ -25,9 +25,7 @@ type ArtifactLinkOutput struct {
 	Url  string `json:"url"`
 }
 
-type ArtifactOutput struct {
-	Slug            string               `json:"slug"`
-	Rev             *string              `json:"rev"`
+type ArtifactEntryOutput struct {
 	Version         int                  `json:"version"`
 	Title           string               `json:"title"`
 	Description     string               `json:"description"`
@@ -39,6 +37,13 @@ type ArtifactOutput struct {
 	FromYear        int                  `json:"fromYear"`
 	ToYear          *int                 `json:"toYear"`
 	Decades         []int                `json:"decades"`
+}
+
+type ArtifactOutput struct {
+	Path  string              `json:"path"`
+	Slug  string              `json:"slug"`
+	Rev   *string             `json:"rev"`
+	Entry ArtifactEntryOutput `json:"entry"`
 }
 
 type Output struct {
@@ -67,19 +72,22 @@ func marshalArtifact(entries []parse.Artifact, pretty bool) (string, error) {
 		}
 
 		artifacts[entryIndex] = ArtifactOutput{
-			Slug:            artifact.Slug,
-			Rev:             artifact.Rev,
-			Version:         artifact.Entry.Version,
-			Title:           artifact.Entry.Title,
-			Description:     artifact.Entry.Description,
-			LongDescription: artifact.Entry.LongDescription,
-			Files:           files,
-			Links:           links,
-			People:          artifact.Entry.People,
-			Identities:      artifact.Entry.Identities,
-			FromYear:        artifact.Entry.FromYear,
-			ToYear:          artifact.Entry.ToYear,
-			Decades:         artifact.Entry.Decades,
+			Path: artifact.Path,
+			Slug: artifact.Slug,
+			Rev:  artifact.Rev,
+			Entry: ArtifactEntryOutput{
+				Version:         artifact.Entry.Version,
+				Title:           artifact.Entry.Title,
+				Description:     artifact.Entry.Description,
+				LongDescription: artifact.Entry.LongDescription,
+				Files:           files,
+				Links:           links,
+				People:          artifact.Entry.People,
+				Identities:      artifact.Entry.Identities,
+				FromYear:        artifact.Entry.FromYear,
+				ToYear:          artifact.Entry.ToYear,
+				Decades:         artifact.Entry.Decades,
+			},
 		}
 	}
 

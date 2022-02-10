@@ -91,9 +91,10 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 		}
 
 		artifacts = append(artifacts, Artifact{
-			Entry: entry,
+			Path:  revision.File.Name,
 			Slug:  filepath.Base(filepath.Dir(revision.File.Name)),
 			Rev:   &artifactRevisions[revIndex].Rev,
+			Entry: entry,
 		})
 	}
 
