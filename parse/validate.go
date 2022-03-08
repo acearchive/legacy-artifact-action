@@ -113,9 +113,14 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		delete(remainingDecades, decade)
 	}
 
-	if entry.FromYear != 0 && (entry.ToYear == nil || *entry.ToYear != 0) {
-		for expectedButNotFoundDecade := range remainingDecades {
-			registerError("decades", fmt.Sprintf("should contain '%d' but doesn't", expectedButNotFoundDecade))
+	for decadeIndex, decade := range entry.Decades {
+		if decadeIndex == 0 {
+			continue
+		}
+
+		if decade < entry.Decades[decadeIndex-1] {
+			registerError("decades", "is not in chronological order")
+			break
 		}
 	}
 
