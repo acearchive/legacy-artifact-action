@@ -82,6 +82,14 @@ already pinned to your account in a previous run.
 In addition to being used as a GitHub action, this tool provides a CLI. To use
 the CLI, you must clone the Ace Archive repository yourself.
 
+To use the CLI, you must first install [Go](https://go.dev/).
+
+To run the CLI and see the help:
+
+```
+go run . --help
+```
+
 ```
 Host content from Ace Archive on the IPFS network.
 
