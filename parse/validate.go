@@ -33,6 +33,25 @@ func (e InvalidArtifactError) Error() string {
 	return builder.String()
 }
 
+func validateHasNoDuplicates(values []string, fieldPath string) []InvalidArtifactReason {
+	deduplicatedValues := make(map[string]struct{})
+
+	var reasons []InvalidArtifactReason
+
+	for _, value := range values {
+		if _, isDuplicate := deduplicatedValues[value]; isDuplicate {
+			reasons = append(reasons, InvalidArtifactReason{
+				FieldPath: fieldPath,
+				Reason:    "contains duplicates",
+			})
+		}
+
+		deduplicatedValues[value] = struct{}{}
+	}
+
+	return reasons
+}
+
 func validateEntry(entry ArtifactEntry, filePath string) error {
 	var reasons []InvalidArtifactReason
 
@@ -69,6 +88,16 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 
 	if len(entry.Decades) == 0 {
 		registerError("decades", "can not be empty")
+	}
+
+	reasons = append(reasons, validateHasNoDuplicates(entry.Aliases, "aliases")...)
+	reasons = append(reasons, validateHasNoDuplicates(entry.People, "people")...)
+	reasons = append(reasons, validateHasNoDuplicates(entry.Identities, "identities")...)
+
+	for _, alias := range entry.Aliases {
+		if strings.Contains(alias, "/") {
+			registerError("aliases", "can not contain '/'")
+		}
 	}
 
 	earliestDecade := entry.FromYear - (entry.FromYear % 10) //nolint:gomnd

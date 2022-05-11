@@ -37,6 +37,7 @@ type ArtifactEntryOutput struct {
 	FromYear        int                  `json:"fromYear"`
 	ToYear          *int                 `json:"toYear"`
 	Decades         []int                `json:"decades"`
+	Aliases         []string             `json:"aliases"`
 }
 
 type ArtifactOutput struct {
@@ -87,6 +88,7 @@ func marshalArtifact(entries []parse.Artifact, pretty bool) (string, error) {
 				FromYear:        artifact.Entry.FromYear,
 				ToYear:          artifact.Entry.ToYear,
 				Decades:         artifact.Entry.Decades,
+				Aliases:         artifact.Entry.Aliases,
 			},
 		}
 	}

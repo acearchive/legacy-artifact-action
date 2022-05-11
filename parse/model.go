@@ -33,4 +33,5 @@ type ArtifactEntry struct {
 	FromYear        int                 `yaml:"fromYear"`
 	ToYear          *int                `yaml:"toYear"`
 	Decades         []int               `yaml:"decades"`
+	Aliases         []string            `yaml:"aliases"`
 }
