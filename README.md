@@ -187,7 +187,8 @@ objects with the following fields:
         "toYear": null,
         "decades": [
           1970
-        ]
+        ],
+        "aliases": null
       }
     },
   ]
