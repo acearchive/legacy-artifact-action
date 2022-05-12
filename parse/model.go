@@ -35,3 +35,26 @@ type ArtifactEntry struct {
 	Decades         []int               `yaml:"decades" json:"decades"`
 	Aliases         []string            `yaml:"aliases" json:"aliases"`
 }
+
+type EntryField string
+
+const (
+	FieldVersion         EntryField = "version"
+	FieldTitle           EntryField = "title"
+	FieldDescription     EntryField = "description"
+	FieldLongDescription EntryField = "longDescription"
+	FieldFiles           EntryField = "files"
+	FieldFileName        EntryField = "name"
+	FieldFileMediaType   EntryField = "mediaType"
+	FieldFileFilename    EntryField = "filename"
+	FieldFileCid         EntryField = "cid"
+	FieldLinks           EntryField = "links"
+	FieldLinkName        EntryField = "name"
+	FieldLinkUrl         EntryField = "url"
+	FieldPeople          EntryField = "people"
+	FieldIdentities      EntryField = "identities"
+	FieldFromYear        EntryField = "fromYear"
+	FieldToYear          EntryField = "toYear"
+	FieldDecades         EntryField = "decades"
+	FieldAliases         EntryField = "aliases"
+)

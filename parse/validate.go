@@ -10,13 +10,11 @@ import (
 	"strings"
 )
 
-const indentString = "    "
-
 var ErrInvalidArtifactFiles = errors.New("one or more artifact files are invalid")
 
 type InvalidArtifactReason struct {
-	FieldPath string
-	Reason    string
+	Field  EntryField
+	Reason string
 }
 
 type InvalidArtifactError struct {
@@ -26,78 +24,80 @@ type InvalidArtifactError struct {
 
 func (e InvalidArtifactError) Error() string {
 	var builder strings.Builder
-	builder.WriteString(fmt.Sprintf("'%s':\n", e.FilePath))
+	builder.WriteString(fmt.Sprintf("%s:\n", e.FilePath))
 	for _, reason := range e.Reasons {
-		builder.WriteString(fmt.Sprintf("%s`%s` %s\n", indentString, reason.FieldPath, reason.Reason))
+		builder.WriteString(fmt.Sprintf("  %s %s\n", reason.Field.Literal(), reason.Reason))
 	}
 	return builder.String()
 }
 
-func validateHasNoDuplicates(values []string, fieldPath string) []InvalidArtifactReason {
-	deduplicatedValues := make(map[string]struct{})
+func (f EntryField) At(index int) EntryField {
+	return EntryField(fmt.Sprintf("%s[%d]", f, index))
+}
 
-	var reasons []InvalidArtifactReason
+func (f EntryField) Of(outer EntryField) EntryField {
+	return EntryField(fmt.Sprintf("%s.%s", outer, f))
+}
+
+func (f EntryField) Literal() string {
+	return fmt.Sprintf("`%s`", f)
+}
+
+type ErrorCallback func(field EntryField, reason string)
+
+type FieldValidator func(entry ArtifactEntry, reportError ErrorCallback)
+
+func validateIsNotEmpty(field EntryField, value string, reportError ErrorCallback) {
+	if value == "" {
+		reportError(field, "can not be empty")
+	}
+}
+
+func validateHasNoDuplicates(field EntryField, values []string, reportError ErrorCallback) {
+	deduplicatedValues := make(map[string]struct{})
 
 	for _, value := range values {
 		if _, isDuplicate := deduplicatedValues[value]; isDuplicate {
-			reasons = append(reasons, InvalidArtifactReason{
-				FieldPath: fieldPath,
-				Reason:    "contains duplicates",
-			})
+			reportError(field, "contains duplicates")
 		}
 
 		deduplicatedValues[value] = struct{}{}
 	}
-
-	return reasons
 }
 
-func validateEntry(entry ArtifactEntry, filePath string) error {
-	var reasons []InvalidArtifactReason
-
-	registerError := func(fieldPath, reason string) {
-		reasons = append(reasons, InvalidArtifactReason{
-			FieldPath: fieldPath,
-			Reason:    reason,
-		})
-	}
-
+func validateVersion(entry ArtifactEntry, reportError ErrorCallback) {
 	if entry.Version != CurrentArtifactVersion {
-		registerError("version", fmt.Sprintf("must be the current version (%d)", CurrentArtifactVersion))
+		reportError(FieldVersion, fmt.Sprintf("must be the current version (%d)", CurrentArtifactVersion))
 	}
+}
 
-	if entry.Title == "" {
-		registerError("title", "can not be empty")
-	}
+func validateTitle(entry ArtifactEntry, reportError ErrorCallback) {
+	validateIsNotEmpty(FieldTitle, entry.Title, reportError)
+}
 
-	if entry.Description == "" {
-		registerError("description", "can not be empty")
-	}
+func validateDescription(entry ArtifactEntry, reportError ErrorCallback) {
+	validateIsNotEmpty(FieldDescription, entry.Description, reportError)
+}
 
+func validateFromYear(entry ArtifactEntry, reportError ErrorCallback) {
 	if entry.FromYear == 0 {
-		registerError("fromYear", "can not be 0")
+		reportError(FieldFromYear, "can not be 0")
 	}
+}
 
+func validateToYear(entry ArtifactEntry, reportError ErrorCallback) {
 	if entry.ToYear != nil && *entry.ToYear == 0 {
-		registerError("toYear", "can not be 0")
+		reportError(FieldToYear, "can not be 0")
 	}
 
 	if entry.ToYear != nil && *entry.ToYear < entry.FromYear {
-		registerError("toYear", "can not be come before `fromYear`")
+		reportError(FieldToYear, fmt.Sprintf("can not be come before %s", FieldFromYear.Literal()))
 	}
+}
 
+func validateDecades(entry ArtifactEntry, reportError ErrorCallback) {
 	if len(entry.Decades) == 0 {
-		registerError("decades", "can not be empty")
-	}
-
-	reasons = append(reasons, validateHasNoDuplicates(entry.Aliases, "aliases")...)
-	reasons = append(reasons, validateHasNoDuplicates(entry.People, "people")...)
-	reasons = append(reasons, validateHasNoDuplicates(entry.Identities, "identities")...)
-
-	for _, alias := range entry.Aliases {
-		if strings.Contains(alias, "/") {
-			registerError("aliases", "can not contain '/'")
-		}
+		reportError(FieldDecades, "can not be empty")
 	}
 
 	earliestDecade := entry.FromYear - (entry.FromYear % 10) //nolint:gomnd
@@ -114,7 +114,7 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 
 	for decadeIndex, decade := range entry.Decades {
 		if decade%10 != 0 {
-			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "is not a decade")
+			reportError(FieldDecades.At(decadeIndex), "is not a decade")
 			continue
 		}
 
@@ -123,19 +123,19 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		}
 
 		if decade < earliestDecade {
-			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes before the decade of `fromYear`")
+			reportError(FieldDecades.At(decadeIndex), fmt.Sprintf("comes before the decade of %s", FieldFromYear.Literal()))
 			continue
 		}
 
 		if entry.ToYear != nil {
 			if latestDecade := *entry.ToYear - (*entry.ToYear % 10); decade > latestDecade { //nolint:gomnd
-				registerError(fmt.Sprintf("decades[%d]", decadeIndex), "comes after the decade of `toYear`")
+				reportError(FieldDecades.At(decadeIndex), fmt.Sprintf("comes after the decade of %s", FieldToYear.Literal()))
 				continue
 			}
 		}
 
 		if _, ok := remainingDecades[decade]; !ok {
-			registerError(fmt.Sprintf("decades[%d]", decadeIndex), "is in the list more than once")
+			reportError(FieldDecades.At(decadeIndex), "is in the list more than once")
 			continue
 		}
 
@@ -148,45 +148,90 @@ func validateEntry(entry ArtifactEntry, filePath string) error {
 		}
 
 		if decade < entry.Decades[decadeIndex-1] {
-			registerError("decades", "is not in chronological order")
+			reportError(FieldDecades, "is not in chronological order")
 			break
 		}
 	}
+}
 
+func validateAliases(entry ArtifactEntry, reportError ErrorCallback) {
+	validateHasNoDuplicates(FieldAliases, entry.Aliases, reportError)
+
+	for i, alias := range entry.Aliases {
+		if strings.Contains(alias, "/") {
+			reportError(FieldAliases.At(i), "can not contain '/'")
+		}
+	}
+}
+
+func validatePeople(entry ArtifactEntry, reportError ErrorCallback) {
+	validateHasNoDuplicates(FieldPeople, entry.People, reportError)
+}
+
+func validateIdentities(entry ArtifactEntry, reportError ErrorCallback) {
+	validateHasNoDuplicates(FieldIdentities, entry.Identities, reportError)
+}
+
+func validateFiles(entry ArtifactEntry, reportError ErrorCallback) {
 	if len(entry.Files) == 0 && len(entry.Links) == 0 {
-		registerError("files", "and `links` can not both be empty")
+		reportError(FieldFiles, fmt.Sprintf("and %s can not both be empty", FieldLinks.Literal()))
 	}
 
 	for fileIndex, fileEntry := range entry.Files {
-		if fileEntry.Name == "" {
-			registerError(fmt.Sprintf("files[%d].name", fileIndex), "can not be empty")
-		}
+		validateIsNotEmpty(FieldFileName.Of(FieldFiles.At(fileIndex)), fileEntry.Name, reportError)
 
 		if _, err := cid.Parse(fileEntry.Cid); err != nil {
-			registerError(fmt.Sprintf("files[%d].cid", fileIndex), "is not a valid CID")
+			reportError(FieldFileCid.Of(FieldFiles.At(fileIndex)), "is not a valid CID")
 		}
 
 		if fileEntry.MediaType != nil {
 			if _, _, err := mime.ParseMediaType(*fileEntry.MediaType); err != nil {
-				registerError(fmt.Sprintf("files[%d].mediaType", fileIndex), "is not a valid media type")
+				reportError(FieldFileMediaType.Of(FieldFiles.At(fileIndex)), "is not a valid media type")
 			}
 		}
 
 		if fileEntry.Filename != nil && filepath.Ext(*fileEntry.Filename) == "" {
-			registerError(fmt.Sprintf("files[%d].filename", fileIndex), "does not have a file extension")
+			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "does not have a file extension")
 		}
 	}
+}
 
+func validateLinks(entry ArtifactEntry, reportError ErrorCallback) {
 	for linkIndex, linkEntry := range entry.Links {
-		if linkEntry.Name == "" {
-			registerError(fmt.Sprintf("links[%d].name", linkIndex), "can not be empty")
-		}
+		validateIsNotEmpty(FieldLinkName.Of(FieldLinks.At(linkIndex)), linkEntry.Name, reportError)
 
 		if linkUrl, err := url.Parse(linkEntry.Url); err != nil {
-			registerError(fmt.Sprintf("links[%d].url", linkIndex), "is not a valid URL")
+			reportError(FieldLinkUrl.Of(FieldLinks.At(linkIndex)), "is not a valid URL")
 		} else if linkUrl.Scheme != "https" {
-			registerError(fmt.Sprintf("links[%d].url", linkIndex), "is not an HTTPS URL")
+			reportError(FieldLinkUrl.Of(FieldLinks.At(linkIndex)), "is not an HTTPS URL")
 		}
+	}
+}
+
+var allValidators = []FieldValidator{
+	validateVersion,
+	validateTitle,
+	validateDescription,
+	validateFromYear,
+	validateToYear,
+	validateDecades,
+	validateAliases,
+	validatePeople,
+	validateIdentities,
+	validateFiles,
+	validateLinks,
+}
+
+func ValidateEntry(entry ArtifactEntry, filePath string) error {
+	var reasons []InvalidArtifactReason
+
+	for _, validator := range allValidators {
+		validator(entry, func(field EntryField, reason string) {
+			reasons = append(reasons, InvalidArtifactReason{
+				Field:  field,
+				Reason: reason,
+			})
+		})
 	}
 
 	if len(reasons) == 0 {

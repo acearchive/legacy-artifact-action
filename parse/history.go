@@ -86,7 +86,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 			continue
 		}
 
-		if err := validateEntry(entry, revision.Path); err != nil {
+		if err := ValidateEntry(entry, revision.Path); err != nil {
 			continue
 		}
 

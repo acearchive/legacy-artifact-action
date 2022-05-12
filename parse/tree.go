@@ -54,7 +54,7 @@ func Tree(workspacePath, pathGlob string) ([]Artifact, error) {
 			continue
 		}
 
-		if validateErr := validateEntry(entry, relativePath); validateErr != nil {
+		if validateErr := ValidateEntry(entry, relativePath); validateErr != nil {
 			artifactErrors = append(artifactErrors, validateErr)
 		}
 
