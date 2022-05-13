@@ -137,8 +137,9 @@ objects with the following fields:
 - `rev` is the git commit hash of the commit the artifact file was pulled from.
   In `tree` mode, this field is always `null`.
 - `entry` contains the actual contents of the artifact file. It mirrors the
-  schema of artifact files, with fields that are optional in artifact files
-  serialized as `null` in the JSON output when they're omitted.
+  schema of artifact files, except as JSON instead of YAML. If a list value is
+  omitted in the artifact file, it's serialized in the JSON output as `[]`. If
+  a scalar value is omitted, it's serialized as `null`.
 
 ```json
 {
@@ -146,11 +147,11 @@ objects with the following fields:
     {
       "path": "content/archive/orlando-the-asexual-manifesto/index.md",
       "slug": "orlando-the-asexual-manifesto",
-      "rev": "1f870aa0f01cc7541286755fc1b7233355e82e43",
+      "rev": null,
       "entry": {
         "version": 1,
-        "title": "<em>The Asexual Manifesto</em>",
-        "description": "A paper by the Asexual Caucus of the New York Radical Feminists",
+        "title": "\u003cem\u003eThe Asexual Manifesto\u003c/em\u003e",
+        "description": "A paper by the Asexual Caucus of the New York Radical Feminists\n",
         "longDescription": null,
         "files": [
           {
@@ -163,17 +164,13 @@ objects with the following fields:
             "name": "Transcript",
             "mediaType": "text/html",
             "filename": null,
-            "cid": "bafybeiakup4b3mjmzw7mjq3ptnv3dqusdebskra2jic73u74nhbizgu3wi"
+            "cid": "bafybeib2fu4qf44xiyduvhadog5raukc3ajdnd4qpsavyxaa2umzjeif5y"
           }
         ],
         "links": [
           {
             "name": "Internet Archive",
             "url": "https://archive.org/details/asexualmanifestolisaorlando"
-          },
-          {
-            "name": "Background and Context",
-            "url": "https://asexualagenda.wordpress.com/2019/08/01/lisa-orlando-author-of-the-asexual-manifesto-1972/"
           }
         ],
         "people": [
@@ -188,9 +185,9 @@ objects with the following fields:
         "decades": [
           1970
         ],
-        "aliases": null
+        "aliases": []
       }
-    },
+    }
   ]
 }
 ```

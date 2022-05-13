@@ -7,6 +7,7 @@ import (
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	"github.com/spf13/viper"
+	"reflect"
 )
 
 const prettyJsonIndent = "  "
@@ -17,8 +18,37 @@ type Output struct {
 	Artifacts []parse.Artifact `json:"artifacts"`
 }
 
+// initializeNilSlicesOfValue accepts a struct and initializes any nil slices in
+// its fields to slices of len = 0 and cap = 0. If one of its fields is a
+// struct or slice of structs, it does the same for those struct's fields
+// recursively.
+func initializeNilSlicesOfValue(value reflect.Value) {
+	for fieldIndex := 0; fieldIndex < value.NumField(); fieldIndex++ {
+		switch field := value.Field(fieldIndex); field.Kind() {
+		case reflect.Struct:
+			initializeNilSlicesOfValue(field)
+		case reflect.Slice:
+			if field.IsNil() {
+				field.Set(reflect.MakeSlice(field.Type(), 0, 0))
+			} else if field.Type().Elem().Kind() == reflect.Struct {
+				for sliceIndex := 0; sliceIndex < field.Len(); sliceIndex++ {
+					initializeNilSlicesOfValue(field.Index(sliceIndex))
+				}
+			}
+		}
+	}
+}
+func initializeNilSlices(value interface{}) {
+	initializeNilSlicesOfValue(reflect.ValueOf(value).Elem())
+}
+
 func marshalArtifact(artifacts []parse.Artifact, pretty bool) (string, error) {
 	output := Output{Artifacts: artifacts}
+
+	// To make the output more consistent and easier to parse, we want to
+	// normalize any nil slices to empty slices before we serialize so that
+	// they're serialized as `[]` and not `null`.
+	initializeNilSlices(&output)
 
 	var (
 		marshalledOutput []byte
