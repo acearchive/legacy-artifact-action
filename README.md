@@ -4,27 +4,31 @@ This repository is a GitHub Action and CLI tool which provides tooling for
 hosting content contributed to [Ace Archive](https://acearchive.lgbt).
 
 This tool can also be used as an API for retrieving current and previous
-versions of artifacts from the archive.
+versions of artifacts from the archive without hosting anything.
 
-This tool parses a repository
-for [artifact files](https://acearchive.lgbt/docs/contributing/artifact-files/),
-validates their syntax, and outputs a JSON document containing metadata about
-each artifact, including
-the [IPFS CID](https://docs.ipfs.io/concepts/content-addressing/) of each file.
+For more information about how artifacts in the archive are stored, you may
+want to check out
+[acearchive/artifacts](https://github.com/acearchive/artifacts) before reading
+the rest of this README.
+
+This tool parses a repository for artifact files, validates their syntax, and
+outputs a JSON document containing metadata about each artifact, including the
+[IPFS CID](https://docs.ipfs.io/concepts/content-addressing/) of each file.
 
 This action is used by
 [acearchive/artifacts](https://github.com/acearchive/artifacts) to upload all
 contributed content to [Web3.Storage](https://web3.storage), but it can be used
 by anyone to help host the content on Ace Archive on the IPFS network. This
-action can also be used with forks of the Ace Archive repository as long as the
-format of the artifact files is the same.
+action could be used with any repository, as long as the artifact files conform
+to the same schema.
 
 Out of the box, this action supports uploading content to Web3.Storage or any
-pinning service that supports the
-[IPFS pinning service API](https://ipfs.github.io/pinning-services-api-spec/),
-but the JSON output could be used to write CI tooling for hosting the content
-anywhere. It's possible to upload content to both Web3.Storage and a pinning
-service by specifying all the necessary input parameters.
+pinning service that supports the [IPFS pinning service
+API](https://ipfs.github.io/pinning-services-api-spec/), but it also produces
+JSON output that can be consumed by other tools. It's possible to upload
+content to both Web3.Storage and a pinning service by specifying all the
+necessary input parameters, but not to multiple pinning services in the same
+run.
 
 ## Modes
 
@@ -44,7 +48,7 @@ commits are pushed or pull requests are merged.
 ### History mode
 
 Sometimes, the contents of an artifact file changes. For example, a file
-containing a transcription might be replaced with a more accurate one. However,
+containing a transcript might be replaced with a more accurate one. However,
 because IPFS uses content-based addressing, links to files don't always
 necessarily point to the latest version of that file. To ensure that old links
 never go dead, it's prudent to not just host the content *currently* in Ace
@@ -62,28 +66,29 @@ previous versions of artifact files that are no longer in the working tree.
 Keep in mind that, by default,
 [actions/checkout](https://github.com/actions/checkout) only fetches one
 commit, so you'll want to set `fetch-depth: 0` in its input parameters to fetch
-the entire commit history.
+the entire commit history (see examples below).
 
 ## Web3.Storage
 
 To upload content to Web3.Storage, an IPFS node must be running and you must
 pass in your Web3.Storage API token and the mutiaddr of the IPFS node's API
-endpoint. The action is smart enough to skip any files already uploaded to your
+endpoint. There's an example below for running an IPFS node in a GitHub Actions
+workflow. The action is smart enough to skip any files already uploaded to your
 Web3.Storage account in a previous run.
 
 ## Pinning services
 
 To pin content with an IPFS pinning service, you must specify the API endpoint
 of the pinning service and your bearer token. Note that pinning services that
-support the standardized API may use a separate endpoint for it. For example,
-the endpoint for [Pinata](https://www.pinata.cloud/) is
-`https://api.pinata.cloud/psa`. The action is smart enough to skip any files
+have their own API may use a separate endpoint for the standardized pinning
+service API. For example, the endpoint for [Pinata](https://www.pinata.cloud/)
+is `https://api.pinata.cloud/psa`. The action is smart enough to skip any files
 already pinned to your account in a previous run.
 
 ## CLI
 
-In addition to being used as a GitHub action, this tool provides a CLI. To use
-the CLI, you must clone the Ace Archive repository yourself.
+In addition to being available as a GitHub action, this tool provides a CLI. To
+use the CLI, you must clone the Ace Archive repository yourself.
 
 To use the CLI, you must first install [Go](https://go.dev/).
 
@@ -119,7 +124,8 @@ Flags:
 
 ## Output
 
-This tool produces two JSON outputs:
+This tool produces two JSON outputs, whether you upload content to a pinning
+service or not.
 
 - `artifacts` is JSON document describing all the artifacts in the repository.
 - `cids` is a JSON array containing a deduplicated list of all the CIDs
@@ -135,20 +141,22 @@ objects with the following fields:
 
 - `path` is the relative path of the artifact file from the root of the
   repository.
-- `slug` is the URL slug of the artifact, which is the file name of the artifact
-  file without the file extension.
+- `slug` is the URL slug of the artifact, which is the file name of the
+  artifact file without the file extension.
 - `rev` is the git commit hash of the commit the artifact file was pulled from.
   In `tree` mode, this field is always `null`.
 - `entry` contains the actual contents of the artifact file. It mirrors the
-  schema of artifact files, except as JSON instead of YAML. If a list value is
-  omitted in the artifact file, it's serialized in the JSON output as `[]`. If a
-  scalar value is omitted, it's serialized as `null`.
+  [schema of artifact
+  files](https://acearchive.lgbt/docs/contributing/artifact-files/), except as
+  JSON instead of YAML. If a list value is omitted in the artifact file, it's
+  serialized in the JSON output as `[]`. If a scalar value is omitted, it's
+  serialized as `null`.
 
 ```json
 {
   "artifacts": [
     {
-      "path": "content/archive/orlando-the-asexual-manifesto/index.md",
+      "path": "artifacts/orlando-the-asexual-manifesto.md",
       "slug": "orlando-the-asexual-manifesto",
       "rev": null,
       "entry": {
@@ -212,8 +220,6 @@ jobs:
       - name: "Get artifacts"
         id: get_artifacts
         uses: acearchive/artifact-action@main
-        with:
-          path: "artifacts"
       - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
@@ -235,7 +241,6 @@ jobs:
         id: get_artifacts
         uses: acearchive/artifact-action@main
         with:
-          path: "artifacts"
           mode: history
       - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
@@ -263,7 +268,6 @@ jobs:
       - name: "Upload artifacts"
         uses: acearchive/artifact-action@main
         with:
-          path: "artifacts"
           w3s-token: ${{ secrets.W3S_API_TOKEN }}
           ipfs-api: "/dns/ipfs/tcp/5001/http"
 ```
@@ -283,7 +287,6 @@ jobs:
       - name: "Upload artifacts"
         uses: acearchive/artifact-action@main
         with:
-          path: "artifacts"
           pin-endpoint: "https://api.pinata.cloud/psa"
           pin-token: ${{ secrets.PINATA_API_TOKEN }}
 ```

@@ -5,8 +5,10 @@ description: >
 inputs:
   path:
     description: >
-      The path in the repository containing the artifact files.
+      The path of the directory in the repository containing the artifact
+      files.
     required: true
+    default: "artifacts"
   mode:
     description: >
       The mode to operate in, either `tree` or `history`. In `tree` mode,
