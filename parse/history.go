@@ -1,10 +1,12 @@
 package parse
 
 import (
+	"fmt"
 	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"path/filepath"
+	"strings"
 )
 
 type Revision struct {
@@ -13,14 +15,16 @@ type Revision struct {
 	Rev  string
 }
 
-func findRevisions(workspacePath, pathGlob string) ([]Revision, error) {
+func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
+	artifactsGlob := filepath.Join(artifactsPath, fmt.Sprintf("*%s", ArtifactFileExtension))
+
 	repo, err := git.PlainOpen(workspacePath)
 	if err != nil {
 		return nil, err
 	}
 
 	pathFilter := func(path string) bool {
-		matches, _ := filepath.Match(pathGlob, path)
+		matches, _ := filepath.Match(artifactsGlob, path)
 		return matches
 	}
 
@@ -38,7 +42,7 @@ func findRevisions(workspacePath, pathGlob string) ([]Revision, error) {
 		}
 
 		for _, stat := range stats {
-			if matches, _ := filepath.Match(pathGlob, stat.Name); matches {
+			if matches, _ := filepath.Match(artifactsGlob, stat.Name); matches {
 				file, err := commit.File(stat.Name)
 				if err != nil {
 					return err
@@ -62,8 +66,8 @@ func findRevisions(workspacePath, pathGlob string) ([]Revision, error) {
 	return revs, nil
 }
 
-func History(workspacePath, pathGlob string) ([]Artifact, error) {
-	artifactRevisions, err := findRevisions(workspacePath, pathGlob)
+func History(workspacePath, artifactsPath string) ([]Artifact, error) {
+	artifactRevisions, err := findRevisions(workspacePath, artifactsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +96,7 @@ func History(workspacePath, pathGlob string) ([]Artifact, error) {
 
 		artifacts = append(artifacts, Artifact{
 			Path:  revision.File.Name,
-			Slug:  filepath.Base(filepath.Dir(revision.File.Name)),
+			Slug:  strings.TrimSuffix(filepath.Base(revision.File.Name), ArtifactFileExtension),
 			Rev:   &artifactRevisions[revIndex].Rev,
 			Entry: entry,
 		})

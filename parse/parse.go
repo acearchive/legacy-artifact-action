@@ -25,8 +25,8 @@ func (e ArtifactParseError) Error() string {
 	return fmt.Sprintf("'%s': %s", e.Path, e.Reason)
 }
 
-func findArtifactFiles(workspacePath, pathGlob string) ([]string, error) {
-	return filepath.Glob(filepath.Join(workspacePath, pathGlob))
+func findArtifactFiles(workspacePath, artifactsPath string) ([]string, error) {
+	return filepath.Glob(filepath.Join(workspacePath, artifactsPath, fmt.Sprintf("*%s", ArtifactFileExtension)))
 }
 
 func isFrontMatterDelimiter(line string) bool {

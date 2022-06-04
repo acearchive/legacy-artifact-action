@@ -4,6 +4,7 @@ import (
 	"github.com/frawleyskid/w3s-upload/logger"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func logArtifactErrors(artifactErrors []error) {
@@ -12,8 +13,8 @@ func logArtifactErrors(artifactErrors []error) {
 	os.Exit(1)
 }
 
-func Tree(workspacePath, pathGlob string) ([]Artifact, error) {
-	artifactFilePaths, err := findArtifactFiles(workspacePath, pathGlob)
+func Tree(workspacePath, artifactsPath string) ([]Artifact, error) {
+	artifactFilePaths, err := findArtifactFiles(workspacePath, artifactsPath)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func Tree(workspacePath, pathGlob string) ([]Artifact, error) {
 
 		artifacts = append(artifacts, Artifact{
 			Path:  relativePath,
-			Slug:  filepath.Base(filepath.Dir(relativePath)),
+			Slug:  strings.TrimSuffix(filepath.Base(relativePath), ArtifactFileExtension),
 			Rev:   nil,
 			Entry: entry,
 		})

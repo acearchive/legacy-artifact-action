@@ -21,7 +21,7 @@ var (
 func init() {
 	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
 	rootCmd.Flags().StringP("mode", "m", "tree", "The mode to operate in, either \"tree\" or \"history\"")
-	rootCmd.Flags().String("path-glob", "content/archive/*/index.md", "A relative path `glob` for locating artifact files")
+	rootCmd.Flags().String("path", "artifacts", "The path of the artifact files in the repository")
 	rootCmd.Flags().String("w3s-token", "", "The secret API `token` for Web3.Storage")
 	rootCmd.Flags().String("ipfs-api", "/dns/localhost/tcp/5001/http", "The `multiaddr` of your IPFS node")
 	rootCmd.Flags().String("pin-endpoint", "", "The URL of the IPFS pinning service API `endpoint` to use")
@@ -45,7 +45,7 @@ func init() {
 		panic(err)
 	}
 
-	if err := viper.BindEnv("path-glob", "INPUT_PATH-GLOB"); err != nil {
+	if err := viper.BindEnv("path", "INPUT_PATH"); err != nil {
 		panic(err)
 	}
 
@@ -81,12 +81,12 @@ var rootCmd = &cobra.Command{
 
 		switch mode := viper.GetString("mode"); mode {
 		case "tree":
-			artifacts, err = parse.Tree(viper.GetString("repo"), viper.GetString("path-glob"))
+			artifacts, err = parse.Tree(viper.GetString("repo"), viper.GetString("path"))
 			if err != nil {
 				return err
 			}
 		case "history":
-			artifacts, err = parse.History(viper.GetString("repo"), viper.GetString("path-glob"))
+			artifacts, err = parse.History(viper.GetString("repo"), viper.GetString("path"))
 			if err != nil {
 				return err
 			}

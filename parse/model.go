@@ -2,6 +2,8 @@ package parse
 
 const CurrentArtifactVersion = 1
 
+const ArtifactFileExtension = ".md"
+
 type Artifact struct {
 	Path  string        `json:"path"`
 	Slug  string        `json:"slug"`

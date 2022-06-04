@@ -3,6 +3,10 @@ description: >
   This action is part of the Ace Archive project, and is used to host content
   submitted to Ace Archive.
 inputs:
+  path:
+    description: >
+      The path in the repository containing the artifact files.
+    required: true
   mode:
     description: >
       The mode to operate in, either `tree` or `history`. In `tree` mode,
@@ -12,13 +16,6 @@ inputs:
       silently.
     required: true
     default: "tree"
-  path-glob:
-    description: >
-      A shell glob for matching artifact files in the repository. The action
-      assumes that the second-to-last path component (the directory name) is
-      the URL slug of the artifact.
-    required: true
-    default: "content/archive/*/index.md"
   w3s-token:
     description: >
       The secret API token for Web3.Storage. If this is provided, all artifacts
