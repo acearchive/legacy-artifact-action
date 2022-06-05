@@ -1,19 +1,16 @@
 # artifact-action
 
-This repository is a GitHub Action and CLI tool which provides tooling for
-hosting content contributed to [Ace Archive](https://acearchive.lgbt).
+This is a GitHub Action and CLI tool which provides tooling for working with
+[Ace Archive](https://acearchive.lgbt). This tool has three functions:
 
-This tool can also be used as an API for retrieving current and previous
-versions of artifacts from the archive without hosting anything.
+- Querying the archive to retrieve artifact metadata, including metadata for
+  previous versions of artifacts.
+- Optionally validating the syntax of artifact files.
+- Optionally re-hosting the content in the archive on the IPFS network.
 
-For more information about how artifacts in the archive are stored, you may
-want to check out
-[acearchive/artifacts](https://github.com/acearchive/artifacts) before reading
-the rest of this README.
-
-This tool parses a repository for artifact files, validates their syntax, and
-outputs a JSON document containing metadata about each artifact, including the
-[IPFS CID](https://docs.ipfs.io/concepts/content-addressing/) of each file.
+For background on how artifacts in the archive are stored and what an artifact
+file is, you may want to check out
+[acearchive/artifacts](https://github.com/acearchive/artifacts).
 
 This action is used by
 [acearchive/artifacts](https://github.com/acearchive/artifacts) to upload all
@@ -22,13 +19,14 @@ by anyone to help host the content on Ace Archive on the IPFS network. This
 action could be used with any repository, as long as the artifact files conform
 to the same schema.
 
-Out of the box, this action supports uploading content to Web3.Storage or any
-pinning service that supports the [IPFS pinning service
-API](https://ipfs.github.io/pinning-services-api-spec/), but it also produces
-JSON output that can be consumed by other tools. It's possible to upload
-content to both Web3.Storage and a pinning service by specifying all the
-necessary input parameters, but not to multiple pinning services in the same
-run.
+This tool produces JSON output containing artifact metadata, including the
+[CID](https://docs.ipfs.io/concepts/content-addressing/) of each file
+associated with the artifact, which you can use to retrieve the content over
+either the IPFS or HTTP protocols.
+
+This action supports uploading content to Web3.Storage or any pinning service
+that supports the [IPFS pinning service
+API](https://ipfs.github.io/pinning-services-api-spec/).
 
 ## Modes
 
@@ -124,14 +122,13 @@ Flags:
 
 ## Output
 
-This tool produces two JSON outputs, whether you upload content to a pinning
-service or not.
+This tool produces two JSON outputs:
 
 - `artifacts` is JSON document describing all the artifacts in the repository.
 - `cids` is a JSON array containing a deduplicated list of all the CIDs
   contained in artifacts in the repository.
 
-The `cids` output is provided for convenience if you just want to re-host all
+The `cids` output is provided for convenience if you just want to retrieve all
 the content in the archive and don't need artifact metadata. In this list, CIDs
 are deduplicated by their multihash, so if the repository contains a v0 CID and
 a v1 CID with the same multihash, only one will be returned.
