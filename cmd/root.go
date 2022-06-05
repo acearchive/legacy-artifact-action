@@ -19,9 +19,16 @@ var (
 	ErrOverloadedPinningServices = errors.New("can not upload to both Web3.Storage and a pinning service")
 )
 
+type OperatingMode string
+
+const (
+	ModeValidate OperatingMode = "validate"
+	ModeHistory  OperatingMode = "history"
+)
+
 func init() {
 	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
-	rootCmd.Flags().StringP("mode", "m", "tree", "The mode to operate in, either \"tree\" or \"history\"")
+	rootCmd.Flags().StringP("mode", "m", "validate", "The mode to operate in, either \"validate\" or \"history\"")
 	rootCmd.Flags().String("path", "artifacts", "The path of the artifact files in the repository")
 	rootCmd.Flags().String("w3s-token", "", "The secret API `token` for Web3.Storage")
 	rootCmd.Flags().String("ipfs-api", "/dns/localhost/tcp/5001/http", "The `multiaddr` of your IPFS node")
@@ -84,13 +91,13 @@ var rootCmd = &cobra.Command{
 			err       error
 		)
 
-		switch mode := viper.GetString("mode"); mode {
-		case "tree":
+		switch mode := OperatingMode(viper.GetString("mode")); mode {
+		case ModeValidate:
 			artifacts, err = parse.Tree(viper.GetString("repo"), viper.GetString("path"))
 			if err != nil {
 				return err
 			}
-		case "history":
+		case ModeHistory:
 			artifacts, err = parse.History(viper.GetString("repo"), viper.GetString("path"))
 			if err != nil {
 				return err

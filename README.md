@@ -31,11 +31,11 @@ API](https://ipfs.github.io/pinning-services-api-spec/).
 ## Modes
 
 This action has two modes of operation, which you specify via the `mode` input
-parameter. The default mode is `tree`.
+parameter. The default mode is `validate`.
 
-### Tree mode
+### Validate mode
 
-In `tree` mode, artifact files are pulled from the working tree of the
+In `validate` mode, artifact files are pulled from the working tree of the
 repository and their syntax is validated. If any artifact file in the working
 tree has invalid syntax, the action fails.
 
@@ -111,7 +111,7 @@ Usage:
 Flags:
   -h, --help                    help for artifact-action
       --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
-  -m, --mode string             The mode to operate in, either "tree" or "history" (default "tree")
+  -m, --mode string             The mode to operate in, either "validate" or "history" (default "validate")
   -o, --output string           The output to produce, either "artifacts", "cids", or "summary" (default "summary")
       --path string             The path of the artifact files in the repository (default "artifacts")
       --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
@@ -140,7 +140,7 @@ objects with the following fields:
   repository.
 - `slug` is the URL slug of the artifact, which is the file name of the
   artifact file without the file extension.
-- `commit` is the commit the artifact file was pulled from. In `tree` mode,
+- `commit` is the commit the artifact file was pulled from. In `validate` mode,
   this field is always `null`.
   - `commit.rev` is the commit hash.
   - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
@@ -207,7 +207,7 @@ objects with the following fields:
 
 ## Examples
 
-### Just get the JSON output (tree mode)
+### Just get the JSON output (validate mode)
 
 ```yaml
 jobs:

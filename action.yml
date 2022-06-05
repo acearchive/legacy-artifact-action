@@ -11,13 +11,13 @@ inputs:
     default: "artifacts"
   mode:
     description: >
-      The mode to operate in, either `tree` or `history`. In `tree` mode,
-      artifact files are pulled from the working tree and their syntax is
+      The mode to operate in, either `validate` or `history`. In `validate`
+      mode, artifact files are pulled from the working tree and their syntax is
       validated. In `history` mode, the entire commit history is traversed to
       pull each version of each artifact file, and syntax errors are ignored
       silently.
     required: true
-    default: "tree"
+    default: "validate"
   w3s-token:
     description: >
       The secret API token for Web3.Storage. If this is provided, all artifacts
