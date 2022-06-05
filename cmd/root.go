@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	ErrInvalidMode = errors.New("invalid mode parameter")
+	ErrInvalidMode               = errors.New("invalid mode parameter")
+	ErrOverloadedPinningServices = errors.New("can not upload to both Web3.Storage and a pinning service")
 )
 
 func init() {
@@ -74,6 +75,10 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
+		if (viper.IsSet("w3s-token") || viper.IsSet("ipfs-api")) && (viper.IsSet("pin-endpoint") || viper.IsSet("pin-token")) {
+			return ErrOverloadedPinningServices
+		}
+
 		var (
 			artifacts []parse.Artifact
 			err       error
@@ -103,7 +108,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if viper.IsSet("w3s-token") {
+		if viper.IsSet("w3s-token") && viper.IsSet("ipfs-api") {
 			if err := w3s.Upload(ctx, viper.GetString("w3s-token"), viper.GetString("ipfs-api"), cidList); err != nil {
 				return err
 			}
