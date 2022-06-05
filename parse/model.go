@@ -1,14 +1,21 @@
 package parse
 
+import "time"
+
 const CurrentArtifactVersion = 1
 
 const ArtifactFileExtension = ".md"
 
 type Artifact struct {
-	Path  string        `json:"path"`
-	Slug  string        `json:"slug"`
-	Rev   *string       `json:"rev"`
-	Entry ArtifactEntry `json:"entry"`
+	Path   string          `json:"path"`
+	Slug   string          `json:"slug"`
+	Commit *ArtifactCommit `json:"commit"`
+	Entry  ArtifactEntry   `json:"entry"`
+}
+
+type ArtifactCommit struct {
+	Rev  string    `json:"rev"`
+	Date time.Time `json:"date"`
 }
 
 type ArtifactEntryFile struct {

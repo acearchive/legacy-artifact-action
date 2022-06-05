@@ -143,8 +143,10 @@ objects with the following fields:
   repository.
 - `slug` is the URL slug of the artifact, which is the file name of the
   artifact file without the file extension.
-- `rev` is the git commit hash of the commit the artifact file was pulled from.
-  In `tree` mode, this field is always `null`.
+- `commit` is the commit the artifact file was pulled from. In `tree` mode,
+  this field is always `null`.
+  - `commit.rev` is the commit hash.
+  - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
 - `entry` contains the actual contents of the artifact file. It mirrors the
   [schema of artifact
   files](https://acearchive.lgbt/docs/contributing/artifact-files/), except as
@@ -158,7 +160,10 @@ objects with the following fields:
     {
       "path": "artifacts/orlando-the-asexual-manifesto.md",
       "slug": "orlando-the-asexual-manifesto",
-      "rev": null,
+      "commit": {
+        "rev": "b9e7dc442ad8bb2ec30311825cb276179130bfde",
+        "date": "2022-05-11T15:11:22Z"
+      },
       "entry": {
         "version": 1,
         "title": "\u003cem\u003eThe Asexual Manifesto\u003c/em\u003e",

@@ -60,10 +60,10 @@ func Tree(workspacePath, artifactsPath string) ([]Artifact, error) {
 		}
 
 		artifacts = append(artifacts, Artifact{
-			Path:  relativePath,
-			Slug:  strings.TrimSuffix(filepath.Base(relativePath), ArtifactFileExtension),
-			Rev:   nil,
-			Entry: entry,
+			Path:   relativePath,
+			Slug:   strings.TrimSuffix(filepath.Base(relativePath), ArtifactFileExtension),
+			Commit: nil,
+			Entry:  entry,
 		})
 	}
 

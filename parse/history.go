@@ -7,12 +7,14 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Revision struct {
 	File object.File
 	Path string
 	Rev  string
+	Date time.Time
 }
 
 func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
@@ -52,6 +54,7 @@ func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
 					File: *file,
 					Path: stat.Name,
 					Rev:  commit.Hash.String(),
+					Date: commit.Author.When,
 				})
 			}
 		}
@@ -95,9 +98,12 @@ func History(workspacePath, artifactsPath string) ([]Artifact, error) {
 		}
 
 		artifacts = append(artifacts, Artifact{
-			Path:  revision.File.Name,
-			Slug:  strings.TrimSuffix(filepath.Base(revision.File.Name), ArtifactFileExtension),
-			Rev:   &artifactRevisions[revIndex].Rev,
+			Path: revision.File.Name,
+			Slug: strings.TrimSuffix(filepath.Base(revision.File.Name), ArtifactFileExtension),
+			Commit: &ArtifactCommit{
+				Rev:  artifactRevisions[revIndex].Rev,
+				Date: artifactRevisions[revIndex].Date.UTC(),
+			},
 			Entry: entry,
 		})
 	}
