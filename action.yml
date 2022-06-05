@@ -1,7 +1,7 @@
-name: "Host Ace Archive artifacts"
+name: "Ace Archive Artifact Action"
+author: "Ace Archive"
 description: >
-  This action is part of the Ace Archive project, and is used to host content
-  submitted to Ace Archive.
+  Query, validate, and rehost artifacts in Ace Archive.
 inputs:
   path:
     description: >
@@ -45,7 +45,8 @@ outputs:
       A JSON document describing the artifacts in the repository.
   cids:
     description: >
-      A deduplicated JSON array of the CIDs contained in artifacts in the repository.
+      A JSON array of the CIDs contained in artifacts in the repository,
+      deduplicated by their multihash.
 runs:
   using: "docker"
   image: "Dockerfile"

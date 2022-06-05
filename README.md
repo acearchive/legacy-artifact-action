@@ -221,7 +221,7 @@ jobs:
           repository: "acearchive/artifacts"
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@main
+        uses: acearchive/artifact-action@v0.1.0
       - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
@@ -241,7 +241,7 @@ jobs:
           fetch-depth: 0
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@main
+        uses: acearchive/artifact-action@v0.1.0
         with:
           mode: history
       - name: "Do something with the artifacts"
@@ -268,7 +268,7 @@ jobs:
         with:
           repository: "acearchive/artifacts"
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@main
+        uses: acearchive/artifact-action@v0.1.0
         with:
           w3s-token: ${{ secrets.W3S_API_TOKEN }}
           ipfs-api: "/dns/ipfs/tcp/5001/http"
@@ -287,7 +287,7 @@ jobs:
         with:
           repository: "acearchive/artifacts"
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@main
+        uses: acearchive/artifact-action@v0.1.0
         with:
           pin-endpoint: "https://api.pinata.cloud/psa"
           pin-token: ${{ secrets.PINATA_API_TOKEN }}
