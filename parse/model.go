@@ -2,7 +2,7 @@ package parse
 
 import "time"
 
-const CurrentArtifactVersion = 1
+const CurrentArtifactVersion = 2
 
 const ArtifactFileExtension = ".md"
 
