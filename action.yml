@@ -11,11 +11,7 @@ inputs:
     default: "artifacts"
   mode:
     description: >
-      The mode to operate in, either `validate` or `history`. In `validate`
-      mode, artifact files are pulled from the working tree and their syntax is
-      validated. In `history` mode, the entire commit history is traversed to
-      pull each version of each artifact file, and syntax errors are ignored
-      silently.
+      The mode to operate in, either `validate` or `history`.
     required: true
     default: "validate"
   w3s-token:
@@ -36,7 +32,7 @@ inputs:
     required: false
   pin-token:
     description: >
-      The bearer token for the configured IPFS pinning service. This is
+      The secret bearer token for the configured IPFS pinning service. This is
       required to pin artifacts using an IPFS pinning service.
     required: false
 outputs:

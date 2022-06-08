@@ -28,43 +28,67 @@ This action supports uploading content to Web3.Storage or any pinning service
 that supports the [IPFS pinning service
 API](https://ipfs.github.io/pinning-services-api-spec/).
 
-## Modes
+## Inputs
 
-This action has two modes of operation, which you specify via the `mode` input
-parameter. The default mode is `validate`.
+### `path`
 
-### Validate mode
+The path of the directory in the repository containing the artifact files.
 
-In `validate` mode, artifact files are pulled from the working tree of the
-repository and their syntax is validated. If any artifact file in the working
-tree has invalid syntax, the action fails.
+### `mode`
 
-This mode is useful or performing status checks on pull requests to ensure
-submitted artifact files are valid and for uploading new artifact files when
-commits are pushed or pull requests are merged.
+The mode to operate in, either `validate` or `history`.
 
-### History mode
+- In `validate` mode, artifact files are pulled from the working tree and their
+  syntax is validated. If any artifact file in the working tree has invalid
+  syntax, the action fails.
+- In `history` mode, the entire commit history is traversed to pull each
+  version of each artifact file, and syntax errors are ignored silently.
 
-Sometimes, the contents of an artifact file changes. For example, a file
-containing a transcript might be replaced with a more accurate one. However,
-because IPFS uses content-based addressing, links to files don't always
+`validate` mode is useful for performing status checks on pull requests to
+ensure submitted artifact files are valid and for uploading new artifact files
+when commits are pushed or pull requests are merged.
+
+`history` mode is useful for re-hosting content from the archive in bulk.
+Because IPFS uses content-based addressing, links to files don't always
 necessarily point to the latest version of that file. To ensure that old links
 never go dead, it's prudent to not just host the content *currently* in Ace
-Archive, but all the content that's *ever* been in Ace Archive. Because
-artifact files are version controlled using git, we can do this fairly easily.
+Archive, but all the content that's *ever* been in Ace Archive. `history` mode
+is useful for this.
 
-In `history` mode, the commit history of the repository is traversed and each
-version of each artifact file is pulled from the commit history. However, in
-this mode, invalid artifact files are skipped silently. Otherwise, an invalid
-artifact file that is committed to the repository and then fixed in a
-subsequent commit would cause the action to fail, which we don't want.
-
-This mode is useful for hosting artifacts from the archive in bulk, including
-previous versions of artifact files that are no longer in the working tree.
 Keep in mind that, by default,
 [actions/checkout](https://github.com/actions/checkout) only fetches one
-commit, so you'll want to set `fetch-depth: 0` in its input parameters to fetch
-the entire commit history (see examples below).
+commit, so for `history` mode, you'll want to set `fetch-depth: 0` in its input
+parameters to fetch the entire commit history (see examples below).
+
+`history` mode does not validate artifact files beyond ensuring that they are
+valid YAML. If they are not valid YAML, they are skipped silently. This is for
+two reasons:
+
+1. An error in a past version of an artifact file that is fixed in a subsequent
+   commit should not cause the action to fail.
+2. We may not support validation for previous artifact schema versions (see
+   [acearchive/artifacts](https://github.com/acearchive/artifacts) for more
+   information about schema versions).
+
+### `w3s-token`
+
+The secret API token for Web3.Storage. If this is provided, all artifacts in
+the repository are uploaded to Web3.Storage.
+
+### `ipfs-api`
+
+The multiaddr of the API endpoint of the running IPFS node. This is required to
+upload artifacts to Web3.Storage.
+
+### `pin-endpoint`
+
+The URL of the IPFS pinning service API endpoint to use. If this is provided,
+all artifacts in the repository are pinned using this pinning service.
+
+### `pin-token`
+
+The secret bearer token for the configured IPFS pinning service. This is
+required to pin artifacts using an IPFS pinning service.
 
 ## Web3.Storage
 
@@ -83,49 +107,12 @@ service API. For example, the endpoint for [Pinata](https://www.pinata.cloud/)
 is `https://api.pinata.cloud/psa`. The action is smart enough to skip any files
 already pinned to your account in a previous run.
 
-## CLI
-
-In addition to being available as a GitHub action, this tool provides a CLI. To
-use the CLI, you must clone the Ace Archive repository yourself.
-
-To use the CLI, you must first install [Go](https://go.dev/).
-
-To run the CLI and see the help:
-
-```
-go run . --help
-```
-
-```
-Host content from Ace Archive on the IPFS network.
-
-To upload content to Web3.Storage, you must specify `--w3s-token` and
-`--ipfs-api`.
-
-To pin content with an IPFS pinning service, you must specify `--pin-endpoint`
-and `--pin-token`.
-
-Usage:
-  artifact-action [flags]
-
-Flags:
-  -h, --help                    help for artifact-action
-      --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
-  -m, --mode string             The mode to operate in, either "validate" or "history" (default "validate")
-  -o, --output string           The output to produce, either "artifacts", "cids", or "summary" (default "summary")
-      --path string             The path of the artifact files in the repository (default "artifacts")
-      --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
-      --pin-token token         The bearer token for the configured IPFS pinning service
-  -r, --repo path               The path of the git repo containing the artifact files (default ".")
-      --w3s-token token         The secret API token for Web3.Storage
-```
-
 ## Output
 
 This tool produces two JSON outputs:
 
 - `artifacts` is JSON document describing all the artifacts in the repository.
-- `cids` is a JSON array containing a deduplicated list of all the CIDs
+- `cids` is a JSON array containing a deduplicated set of all the CIDs
   contained in artifacts in the repository.
 
 The `cids` output is provided for convenience if you just want to retrieve all
@@ -205,9 +192,46 @@ objects with the following fields:
 }
 ```
 
+## CLI
+
+In addition to being available as a GitHub action, this tool provides a CLI. To
+use the CLI, you must clone the Ace Archive repository yourself.
+
+To use the CLI, you must first install [Go](https://go.dev/).
+
+To run the CLI and see the help:
+
+```
+go run . --help
+```
+
+```
+Host content from Ace Archive on the IPFS network.
+
+To upload content to Web3.Storage, you must specify `--w3s-token` and
+`--ipfs-api`.
+
+To pin content with an IPFS pinning service, you must specify `--pin-endpoint`
+and `--pin-token`.
+
+Usage:
+  artifact-action [flags]
+
+Flags:
+  -h, --help                    help for artifact-action
+      --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
+  -m, --mode string             The mode to operate in, either "validate" or "history" (default "validate")
+  -o, --output string           The output to produce, either "artifacts", "cids", or "summary" (default "summary")
+      --path string             The path of the artifact files in the repository (default "artifacts")
+      --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
+      --pin-token token         The bearer token for the configured IPFS pinning service
+  -r, --repo path               The path of the git repo containing the artifact files (default ".")
+      --w3s-token token         The secret API token for Web3.Storage
+```
+
 ## Examples
 
-### Just get the JSON output (validate mode)
+Get the JSON output for all the artifacts in the tip of the branch.
 
 ```yaml
 jobs:
@@ -226,7 +250,7 @@ jobs:
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 
-### Just get the JSON output (history mode)
+Get the JSON output for all the artifacts in the history of the repo.
 
 ```yaml
 jobs:
@@ -248,7 +272,8 @@ jobs:
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 
-### Upload to Web3.Storage
+Validate the artifacts in the tip of the branch and upload the files to
+Web3.Storage.
 
 ```yaml
 jobs:
@@ -274,7 +299,7 @@ jobs:
           ipfs-api: "/dns/ipfs/tcp/5001/http"
 ```
 
-### Pin with a pinning service
+Pin all the files in the history of the repo with Pinata.
 
 ```yaml
 jobs:
@@ -286,9 +311,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: "acearchive/artifacts"
+          fetch-depth: 0
       - name: "Upload artifacts"
         uses: acearchive/artifact-action@v0.1.0
         with:
+          mode: history
           pin-endpoint: "https://api.pinata.cloud/psa"
           pin-token: ${{ secrets.PINATA_API_TOKEN }}
 ```
