@@ -52,8 +52,7 @@ when commits are pushed or pull requests are merged.
 Because IPFS uses content-based addressing, links to files don't always
 necessarily point to the latest version of that file. To ensure that old links
 never go dead, it's prudent to not just host the content *currently* in Ace
-Archive, but all the content that's *ever* been in Ace Archive. `history` mode
-is useful for this.
+Archive, but all the content that's *ever* been in Ace Archive.
 
 Keep in mind that, by default,
 [actions/checkout](https://github.com/actions/checkout) only fetches one
@@ -115,6 +114,8 @@ This tool produces two JSON outputs:
 - `cids` is a JSON array containing a deduplicated set of all the CIDs
   contained in artifacts in the repository.
 
+### `cids`
+
 The `cids` output is provided for convenience if you just want to retrieve all
 the content in the archive and don't need artifact metadata. In this list, CIDs
 are deduplicated by their multihash, so if the repository contains a v0 CID and
@@ -122,6 +123,8 @@ a v1 CID with the same multihash, only one will be returned.
 
 The `cids` output will always return the CIDs for all artifacts in the
 repository, even through schema version changes.
+
+### `artifacts`
 
 The `artifacts` output looks like the example below. It contains an array of
 objects with the following fields:
@@ -134,10 +137,8 @@ objects with the following fields:
   this field is always `null`.
   - `commit.rev` is the commit hash.
   - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
-- `entry` contains the actual contents of the artifact file. It mirrors the
-  [schema of artifact
-  files](https://acearchive.lgbt/docs/contributing/artifact-files/), except as
-  JSON instead of YAML. If a list value is omitted in the artifact file, it's
+- `entry` contains the actual contents of the artifact file, except as JSON
+  instead of YAML. If a list value is omitted in the artifact file, it's
   serialized in the JSON output as `[]`. If a scalar value is omitted, it's
   serialized as `null`.
 
@@ -152,8 +153,8 @@ objects with the following fields:
         "date": "2022-05-11T15:11:22Z"
       },
       "entry": {
-        "version": 1,
-        "title": "\u003cem\u003eThe Asexual Manifesto\u003c/em\u003e",
+        "version": 2,
+        "title": "*The Asexual Manifesto*",
         "description": "A paper by the Asexual Caucus of the New York Radical Feminists\n",
         "longDescription": null,
         "files": [
@@ -234,12 +235,12 @@ Flags:
 
 ## Examples
 
-Get the JSON output for all the artifacts in the tip of the branch.
+Get the JSON output for the current version of each artifact.
 
 ```yaml
 jobs:
   archive:
-    name: "Upload artifacts"
+    name: "Get current artifacts"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
@@ -258,7 +259,7 @@ Get the JSON output for all the artifacts in the history of the repo.
 ```yaml
 jobs:
   archive:
-    name: "Upload artifacts"
+    name: "Get all artifacts"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
@@ -275,13 +276,13 @@ jobs:
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 
-Validate the artifacts in the tip of the branch and upload the files to
+Validate the artifact files in the working tree and upload the files to
 Web3.Storage.
 
 ```yaml
 jobs:
   archive:
-    name: "Upload artiacts"
+    name: "Validate and upload curent artifacts"
     runs-on: ubuntu-latest
     services:
       ipfs:
@@ -307,7 +308,7 @@ Pin all the files in the history of the repo with Pinata.
 ```yaml
 jobs:
   archive:
-    name: "Upload artiacts"
+    name: "Upload all artiacts"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
