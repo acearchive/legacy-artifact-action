@@ -93,10 +93,6 @@ func History(workspacePath, artifactsPath string) ([]Artifact, error) {
 			continue
 		}
 
-		if err := ValidateEntry(entry, revision.Path); err != nil {
-			continue
-		}
-
 		artifacts = append(artifacts, Artifact{
 			Path: revision.File.Name,
 			Slug: strings.TrimSuffix(filepath.Base(revision.File.Name), ArtifactFileExtension),
@@ -108,7 +104,7 @@ func History(workspacePath, artifactsPath string) ([]Artifact, error) {
 		})
 	}
 
-	logger.Printf("Found %d valid artifact files in the history\n", len(artifacts))
+	logger.Printf("Found %d artifact files in the history\n", len(artifacts))
 
 	return artifacts, nil
 }
