@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/go-git/go-git/v5 v5.4.2
+	github.com/icza/dyno v0.0.0-20210726202311-f1bafe5d9996
 	github.com/ipfs/go-cid v0.1.0
 	github.com/ipfs/go-ipfs-http-client v0.2.0
 	github.com/ipfs/go-pinning-service-http-client v0.1.0

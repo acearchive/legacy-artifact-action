@@ -120,6 +120,9 @@ the content in the archive and don't need artifact metadata. In this list, CIDs
 are deduplicated by their multihash, so if the repository contains a v0 CID and
 a v1 CID with the same multihash, only one will be returned.
 
+The `cids` output will always return the CIDs for all artifacts in the
+repository, even through schema version changes.
+
 The `artifacts` output looks like the example below. It contains an array of
 objects with the following fields:
 

@@ -63,7 +63,7 @@ func Tree(workspacePath, artifactsPath string) ([]Artifact, error) {
 			Path:   relativePath,
 			Slug:   strings.TrimSuffix(filepath.Base(relativePath), ArtifactFileExtension),
 			Commit: nil,
-			Entry:  entry,
+			Entry:  entry.ToGeneric(),
 		})
 	}
 

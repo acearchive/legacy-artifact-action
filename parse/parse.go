@@ -2,12 +2,14 @@ package parse
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/frawleyskid/w3s-upload/logger"
-	"github.com/ipfs/go-cid"
+	"github.com/icza/dyno"
 	"gopkg.in/yaml.v2"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -99,40 +101,57 @@ func parseArtifactEntry(frontMatter string) (ArtifactEntry, error) {
 	return entry, nil
 }
 
-func (e Artifact) allCids() ([]cid.Cid, error) {
-	cidList := make([]cid.Cid, len(e.Entry.Files))
-
-	for fileIndex, artifactFile := range e.Entry.Files {
-		artifactCid, err := cid.Parse(artifactFile.Cid)
-		if err != nil {
-			return nil, err
-		}
-
-		cidList[fileIndex] = artifactCid
+func parseGenericEntry(frontMatter string) (GenericEntry, error) {
+	entry := GenericEntry{}
+	if err := yaml.Unmarshal([]byte(frontMatter), &entry); err != nil {
+		return GenericEntry{}, err
 	}
 
-	return cidList, nil
+	return entry.Sanitize(), nil
 }
 
-func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
-	cidList := make([]cid.Cid, 0, len(artifacts))
-	contentSet := make(map[ContentKey]struct{}, len(artifacts))
-
-	for _, artifact := range artifacts {
-		currentCidList, err := artifact.allCids()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, currentCid := range currentCidList {
-			if _, alreadyExists := contentSet[ContentKeyFromCid(currentCid)]; !alreadyExists {
-				contentSet[ContentKeyFromCid(currentCid)] = struct{}{}
-				cidList = append(cidList, currentCid)
-			}
-		}
+func (e ArtifactEntry) ToGeneric() GenericEntry {
+	rawJson, err := json.Marshal(e)
+	if err != nil {
+		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
+		os.Exit(1)
 	}
 
-	logger.Printf("Found %d unique CIDs in artifact files\n", len(cidList))
+	entry := GenericEntry{}
 
-	return cidList, nil
+	if err := json.Unmarshal(rawJson, &entry); err != nil {
+		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
+		os.Exit(1)
+	}
+
+	return entry.Sanitize()
+}
+
+// Sanitize replaces `map[interface{}]interface{}` values that cannot be
+// serialized to JSON with `map[string]interface{}`.
+func (e GenericEntry) Sanitize() GenericEntry {
+	return dyno.ConvertMapI2MapS(map[string]interface{}(e)).(map[string]interface{})
+}
+
+func (e GenericEntry) ToTyped(value interface{}) {
+	rawJson, err := json.Marshal(e)
+	if err != nil {
+		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
+		os.Exit(1)
+	}
+
+	if err := json.Unmarshal(rawJson, value); err != nil {
+		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
+		os.Exit(1)
+	}
+}
+
+func (a Artifact) Version() int {
+	entry := struct {
+		Version int `json:"version"`
+	}{}
+
+	a.Entry.ToTyped(&entry)
+
+	return entry.Version
 }

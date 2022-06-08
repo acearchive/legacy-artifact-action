@@ -88,7 +88,7 @@ func History(workspacePath, artifactsPath string) ([]Artifact, error) {
 			continue
 		}
 
-		entry, err := parseArtifactEntry(frontMatter)
+		entry, err := parseGenericEntry(frontMatter)
 		if err != nil {
 			continue
 		}

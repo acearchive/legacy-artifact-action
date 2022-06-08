@@ -1,16 +1,20 @@
 package parse
 
-import "time"
+import (
+	"time"
+)
 
 const CurrentArtifactVersion = 2
 
 const ArtifactFileExtension = ".md"
 
+type GenericEntry map[string]interface{}
+
 type Artifact struct {
 	Path   string          `json:"path"`
 	Slug   string          `json:"slug"`
 	Commit *ArtifactCommit `json:"commit"`
-	Entry  ArtifactEntry   `json:"entry"`
+	Entry  GenericEntry    `json:"entry"`
 }
 
 type ArtifactCommit struct {
