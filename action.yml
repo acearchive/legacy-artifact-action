@@ -8,21 +8,22 @@ inputs:
       The path of the directory in the repository containing the artifact
       files.
     required: true
-    default: "artifacts"
+    default: "artifacts/"
   mode:
     description: >
-      The mode to operate in, either `validate` or `history`.
+      The mode to operate in, either `validate` or `history`. See the README
+      for details.
     required: true
     default: "validate"
+  ipfs-api:
+    description: >
+      The multiaddr of the API endpoint of the running IPFS node. This is
+      required to upload artifacts to Web3.Storage or an IPFS pinning service.
+    required: false
   w3s-token:
     description: >
       The secret API token for Web3.Storage. If this is provided, all artifacts
       in the repository are uploaded to Web3.Storage.
-    required: false
-  ipfs-api:
-    description: >
-      The multiaddr of the API endpoint of the running IPFS node. This is
-      required to upload artifacts to Web3.Storage.
     required: false
   pin-endpoint:
     description: >

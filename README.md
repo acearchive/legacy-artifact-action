@@ -48,6 +48,10 @@ The mode to operate in, either `validate` or `history`.
 ensure submitted artifact files are valid and for uploading new artifact files
 when commits are pushed or pull requests are merged.
 
+This mode also creates a new UnixFS directory containing links to all the files
+in artifacts in the repository, which will be uploaded to Web3.Storage or an
+IPFS pinning service if the necessary parameters are set (see below).
+
 `history` mode is useful for re-hosting content from the archive in bulk.
 Because IPFS uses content-based addressing, links to files don't always
 necessarily point to the latest version of that file. To ensure that old links
@@ -69,15 +73,17 @@ two reasons:
    [acearchive/artifacts](https://github.com/acearchive/artifacts) for more
    information about schema versions).
 
+### `ipfs-api`
+
+The multiaddr of the API endpoint of the running IPFS node. This is required to
+upload artifacts to either Web3.Storage or an IPFS pinning service. This is
+also required to build a UnixFS directory containing the current version of
+each file.
+
 ### `w3s-token`
 
 The secret API token for Web3.Storage. If this is provided, all artifacts in
 the repository are uploaded to Web3.Storage.
-
-### `ipfs-api`
-
-The multiaddr of the API endpoint of the running IPFS node. This is required to
-upload artifacts to Web3.Storage.
 
 ### `pin-endpoint`
 
@@ -126,24 +132,29 @@ repository, even through schema version changes.
 
 ### `artifacts`
 
-The `artifacts` output looks like the example below. It contains an array of
-objects with the following fields:
+The `artifacts` output looks like the example below. It contains the following
+fields:
 
-- `path` is the relative path of the artifact file from the root of the
-  repository.
-- `slug` is the URL slug of the artifact, which is the file name of the
-  artifact file without the file extension.
-- `commit` is the commit the artifact file was pulled from. In `validate` mode,
-  this field is always `null`.
-  - `commit.rev` is the commit hash.
-  - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
-- `entry` contains the actual contents of the artifact file, except as JSON
-  instead of YAML. If a list value is omitted in the artifact file, it's
-  serialized in the JSON output as `[]`. If a scalar value is omitted, it's
-  serialized as `null`.
+- `rootCid`: The CID of the UnixFS directory containing the current version of
+  each file in the repository. If we're not running in `validate` mode, or if
+  the `ipfs-api` input was not provided, then this will be `null`.
+- `artifacts`: An array of all the artifacts in the repository.
+  - `path` is the relative path of the artifact file from the root of the
+    repository.
+  - `slug` is the URL slug of the artifact, which is the file name of the
+    artifact file without the file extension.
+  - `commit` is the commit the artifact file was pulled from. In `validate`
+    mode, this field is always `null`.
+    - `commit.rev` is the commit hash.
+    - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
+  - `entry` contains the actual contents of the artifact file, except as JSON
+    instead of YAML. If a list value is omitted in the artifact file, it's
+    serialized in the JSON output as `[]`. If a scalar value is omitted, it's
+    serialized as `null`.
 
 ```json
 {
+  "rootCid": "bafybeiabf334qobjurmsp6kjytj2k4ociyor56oomdxhlwt4zvi64prmti",
   "artifacts": [
     {
       "path": "artifacts/orlando-the-asexual-manifesto.md",
@@ -153,7 +164,7 @@ objects with the following fields:
         "date": "2022-05-11T15:11:22Z"
       },
       "entry": {
-        "version": 2,
+        "version": 3,
         "title": "*The Asexual Manifesto*",
         "description": "A paper by the Asexual Caucus of the New York Radical Feminists\n",
         "longDescription": null,
@@ -167,7 +178,7 @@ objects with the following fields:
           {
             "name": "Transcript",
             "mediaType": "text/html",
-            "filename": null,
+            "filename": "the-asexual-manifesto-transcript.html",
             "cid": "bafybeib2fu4qf44xiyduvhadog5raukc3ajdnd4qpsavyxaa2umzjeif5y"
           }
         ],
@@ -212,25 +223,28 @@ go run . --help
 ```
 Host content from Ace Archive on the IPFS network.
 
-To upload content to Web3.Storage, you must specify `--w3s-token` and
-`--ipfs-api`.
+To upload content to Web3.Storage, you must specify `--ipfs-api` and
+`--w3s-token`.
 
-To pin content with an IPFS pinning service, you must specify `--pin-endpoint`
-and `--pin-token`.
+To pin content with an IPFS pinning service, you must specify `--ipfs-api`,
+`--pin-endpoint`, and `--pin-token`.
+
+The multiaddr of your local IPFS node is most likely
+`/dns/localhost/tcp/5001/http` by default.
 
 Usage:
   artifact-action [flags]
 
 Flags:
-  -h, --help                    help for artifact-action
-      --ipfs-api multiaddr      The multiaddr of your IPFS node (default "/dns/localhost/tcp/5001/http")
-  -m, --mode string             The mode to operate in, either "validate" or "history" (default "validate")
-  -o, --output string           The output to produce, either "artifacts", "cids", or "summary" (default "summary")
-      --path string             The path of the artifact files in the repository (default "artifacts")
-      --pin-endpoint endpoint   The URL of the IPFS pinning service API endpoint to use
-      --pin-token token         The bearer token for the configured IPFS pinning service
-  -r, --repo path               The path of the git repo containing the artifact files (default ".")
-      --w3s-token token         The secret API token for Web3.Storage
+  -h, --help                 help for artifact-action
+      --ipfs-api multiaddr   The multiaddr of your IPFS node
+  -m, --mode string          The mode to operate in, either "validate" or "history" (default "validate")
+  -o, --output string        The output to produce, either "artifacts", "cids", or "summary" (default "summary")
+      --path path            The path of the artifact files in the repository (default "artifacts/")
+      --pin-endpoint url     The url of the IPFS pinning service API endpoint to use
+      --pin-token token      The secret bearer token for the configured IPFS pinning service
+  -r, --repo path            The path of the git repo containing the artifact files (default ".")
+      --w3s-token token      The secret API token for Web3.Storage
 ```
 
 ## Examples
@@ -249,7 +263,7 @@ jobs:
           repository: "acearchive/artifacts"
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@v0.2.0
+        uses: acearchive/artifact-action@v0.3.0
       - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
@@ -269,7 +283,7 @@ jobs:
           fetch-depth: 0
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@v0.2.0
+        uses: acearchive/artifact-action@v0.3.0
         with:
           mode: history
       - name: "Do something with the artifacts"
@@ -285,7 +299,7 @@ jobs:
     name: "Validate and upload curent artifacts"
     runs-on: ubuntu-latest
     services:
-      ipfs:
+      ipfs-node:
         image: "ipfs/go-ipfs:latest"
         ports:
           - 4001:4001
@@ -297,10 +311,10 @@ jobs:
         with:
           repository: "acearchive/artifacts"
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@v0.2.0
+        uses: acearchive/artifact-action@v0.3.0
         with:
+          ipfs-api: "/dns/ipfs-node/tcp/5001/http"
           w3s-token: ${{ secrets.W3S_API_TOKEN }}
-          ipfs-api: "/dns/ipfs/tcp/5001/http"
 ```
 
 Pin all the files in the history of the repo with Pinata.
@@ -310,6 +324,13 @@ jobs:
   archive:
     name: "Upload all artiacts"
     runs-on: ubuntu-latest
+    services:
+      ipfs-node:
+        image: "ipfs/go-ipfs:latest"
+        ports:
+          - 4001:4001
+          - 5001:5001
+          - 8080:8080
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -317,9 +338,10 @@ jobs:
           repository: "acearchive/artifacts"
           fetch-depth: 0
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@v0.2.0
+        uses: acearchive/artifact-action@v0.3.0
         with:
           mode: history
+          ipfs-api: "/dns/ipfs-node/tcp/5001/http"
           pin-endpoint: "https://api.pinata.cloud/psa"
           pin-token: ${{ secrets.PINATA_API_TOKEN }}
 ```

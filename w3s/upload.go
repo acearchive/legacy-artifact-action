@@ -2,22 +2,27 @@ package w3s
 
 import (
 	"context"
+
+	"github.com/frawleyskid/w3s-upload/client"
 	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
 )
 
-func Upload(ctx context.Context, token, apiAddr string, cidList []cid.Cid) error {
+func Upload(ctx context.Context, token string, cidList []cid.Cid) error {
 	w3sClient, err := w3s.NewClient(w3s.WithToken(token))
 	if err != nil {
 		return err
 	}
 
-	ipfsClient, err := NewClient(apiAddr)
+	ipfsClientGuard, err := client.New()
 	if err != nil {
 		return err
 	}
+
+	ipfsClient := ipfsClientGuard.Lock()
+	defer ipfsClientGuard.Unlock()
 
 	existingCids, err := listExistingCids(ctx, token)
 	if err != nil {

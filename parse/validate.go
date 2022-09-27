@@ -3,14 +3,19 @@ package parse
 import (
 	"errors"
 	"fmt"
-	"github.com/ipfs/go-cid"
 	"mime"
 	"net/url"
-	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/ipfs/go-cid"
 )
 
 var ErrInvalidArtifactFiles = errors.New("one or more artifact files are invalid")
+
+// This regex must be kept in sync with the one that validates user input on
+// the website.
+var fileNameRegex = regexp.MustCompile(`^[\w\d][\w\d-]*[\w\d](\.[\w\d]+)*$`)
 
 type InvalidArtifactReason struct {
 	Field  EntryField
@@ -177,7 +182,11 @@ func validateFiles(entry ArtifactEntry, reportError ErrorCallback) {
 		reportError(FieldFiles, fmt.Sprintf("and %s can not both be empty", FieldLinks.Literal()))
 	}
 
+	uniqueFiles := make(map[string]struct{}, len(entry.Files))
+
 	for fileIndex, fileEntry := range entry.Files {
+		uniqueFiles[fileEntry.Filename] = struct{}{}
+
 		validateIsNotEmpty(FieldFileName.Of(FieldFiles.At(fileIndex)), fileEntry.Name, reportError)
 
 		if _, err := cid.Parse(fileEntry.Cid); err != nil {
@@ -190,9 +199,17 @@ func validateFiles(entry ArtifactEntry, reportError ErrorCallback) {
 			}
 		}
 
-		if fileEntry.Filename != nil && filepath.Ext(*fileEntry.Filename) == "" {
-			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "does not have a file extension")
+		if len(fileEntry.Filename) == 0 {
+			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "does not have a file name")
+		} else if len(strings.TrimSpace(fileEntry.Filename)) == 0 {
+			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "has a file name that is entirely whitespace")
+		} else if !fileNameRegex.MatchString(fileEntry.Filename) {
+			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "contains illegal characters")
 		}
+	}
+
+	if len(uniqueFiles) < len(entry.Files) {
+		reportError(FieldFiles, "contains duplicate file names")
 	}
 }
 

@@ -2,24 +2,25 @@ package logger
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
+
+	"github.com/frawleyskid/w3s-upload/cfg"
 )
 
 func Printf(format string, a ...interface{}) {
-	if viper.GetBool("action") || viper.GetString("output") == "summary" {
+	if cfg.Action() || cfg.Output() == cfg.OutputSummary {
 		fmt.Printf(format, a...)
 	}
 }
 
 func Println(a ...interface{}) {
-	if viper.GetBool("action") || viper.GetString("output") == "summary" {
+	if cfg.Action() || cfg.Output() == cfg.OutputSummary {
 		fmt.Println(a...)
 	}
 }
 
 func LogError(err error) {
-	if viper.GetBool("action") {
+	if cfg.Action() {
 		fmt.Printf("::error::%s\n", err.Error())
 	} else {
 		if _, err := fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error()); err != nil {
@@ -29,7 +30,7 @@ func LogError(err error) {
 }
 
 func LogErrorGroup(name string, errList []error) {
-	if viper.GetBool("action") {
+	if cfg.Action() {
 		fmt.Printf("::group::%s\n", name)
 
 		for _, err := range errList {

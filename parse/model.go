@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-const CurrentArtifactVersion = 2
+const CurrentArtifactVersion = 3
 
 const ArtifactFileExtension = ".md"
 
@@ -25,7 +25,7 @@ type ArtifactCommit struct {
 type ArtifactEntryFile struct {
 	Name      string  `yaml:"name" json:"name"`
 	MediaType *string `yaml:"mediaType" json:"mediaType"`
-	Filename  *string `yaml:"filename" json:"filename"`
+	Filename  string  `yaml:"filename" json:"filename"`
 	Cid       string  `yaml:"cid" json:"cid"`
 }
 

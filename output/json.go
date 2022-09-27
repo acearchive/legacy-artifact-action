@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
+
+	"github.com/frawleyskid/w3s-upload/cfg"
 	"github.com/frawleyskid/w3s-upload/parse"
 	"github.com/ipfs/go-cid"
-	"github.com/spf13/viper"
-	"reflect"
 )
 
 const prettyJsonIndent = "  "
@@ -16,6 +17,7 @@ var ErrInvalidOutput = errors.New("invalid output parameter")
 
 type Output struct {
 	Artifacts []parse.Artifact `json:"artifacts"`
+	RootCid   *string          `json:"rootCid"`
 }
 
 // initializeNilSlicesOfValue accepts a struct and initializes any nil slices in
@@ -42,9 +44,7 @@ func initializeNilSlices(value interface{}) {
 	initializeNilSlicesOfValue(reflect.ValueOf(value).Elem())
 }
 
-func marshalArtifact(artifacts []parse.Artifact, pretty bool) (string, error) {
-	output := Output{Artifacts: artifacts}
-
+func marshalArtifact(output Output, pretty bool) (string, error) {
 	// To make the output more consistent and easier to parse, we want to
 	// normalize any nil slices to empty slices before we serialize so that
 	// they're serialized as `[]` and not `null`.
@@ -93,9 +93,9 @@ func marshalCid(cids []cid.Cid, pretty bool) (string, error) {
 	return string(marshalledOutput), nil
 }
 
-func Print(entries []parse.Artifact, cidList []cid.Cid) error {
-	if viper.GetBool("action") {
-		artifactOutput, err := marshalArtifact(entries, false)
+func Print(output Output, cidList []cid.Cid) error {
+	if cfg.Action() {
+		artifactOutput, err := marshalArtifact(output, false)
 		if err != nil {
 			return err
 		}
@@ -112,22 +112,22 @@ func Print(entries []parse.Artifact, cidList []cid.Cid) error {
 		return nil
 	}
 
-	switch outputMode := viper.GetString("output"); outputMode {
-	case "artifacts":
-		artifactOutput, err := marshalArtifact(entries, true)
+	switch outputMode := cfg.Output(); outputMode {
+	case cfg.OutputArtifacts:
+		artifactOutput, err := marshalArtifact(output, true)
 		if err != nil {
 			return err
 		}
 
 		fmt.Println(artifactOutput)
-	case "cids":
+	case cfg.OutputCids:
 		cidOutput, err := marshalCid(cidList, true)
 		if err != nil {
 			return err
 		}
 
 		fmt.Println(cidOutput)
-	case "summary":
+	case cfg.OutputSummary:
 	default:
 		return fmt.Errorf("%w: %s", ErrInvalidOutput, outputMode)
 	}
