@@ -36,36 +36,36 @@ The path of the directory in the repository containing the artifact files.
 
 ### `mode`
 
-The mode to operate in, either `validate` or `history`.
+The mode to operate in, either `validate`, `history`, or `upload`.
 
 - In `validate` mode, artifact files are pulled from the working tree and their
   syntax is validated. If any artifact file in the working tree has invalid
   syntax, the action fails.
 - In `history` mode, the entire commit history is traversed to pull each
   version of each artifact file, and syntax errors are ignored silently.
+- In `upload` mode, the entire commit history is traversed to pull each version
+  of each artifact file, syntax errors are ignored silently, and files are
+  uploaded to Web3.Storage or an IPFS pinning service.
 
 `validate` mode is useful for performing status checks on pull requests to
-ensure submitted artifact files are valid and for uploading new artifact files
-when commits are pushed or pull requests are merged.
+ensure submitted artifact files are valid.
 
-This mode also creates a new UnixFS directory containing links to all the files
-in artifacts in the repository, which will be uploaded to Web3.Storage or an
-IPFS pinning service if the necessary parameters are set (see below).
+`history` mode is useful for querying artifact metadata, including previous
+versions of artifacts.
 
-`history` mode is useful for re-hosting content from the archive in bulk.
-Because IPFS uses content-based addressing, links to files don't always
+`upload` mode is useful for re-hosting content from the archive in bulk. This
+mode also creates a UnixFS directory containing links to the latest version of
+each file in each artifact in the repository. This mode is smart enough to skip
+any files already uploaded/pinned in a previous run.
+
+Because IPFS uses content-based addressing, CIDs of files don't always
 necessarily point to the latest version of that file. To ensure that old links
 never go dead, it's prudent to not just host the content *currently* in Ace
 Archive, but all the content that's *ever* been in Ace Archive.
 
-Keep in mind that, by default,
-[actions/checkout](https://github.com/actions/checkout) only fetches one
-commit, so for `history` mode, you'll want to set `fetch-depth: 0` in its input
-parameters to fetch the entire commit history (see examples below).
-
-`history` mode does not validate artifact files beyond ensuring that they are
-valid YAML. If they are not valid YAML, they are skipped silently. This is for
-two reasons:
+`history` and `upload` mode do not validate artifact files beyond ensuring that
+they are valid YAML. If they are not valid YAML, they are skipped silently.
+This is for two reasons:
 
 1. An error in a past version of an artifact file that is fixed in a subsequent
    commit should not cause the action to fail.
@@ -73,44 +73,40 @@ two reasons:
    [acearchive/artifacts](https://github.com/acearchive/artifacts) for more
    information about schema versions).
 
+Keep in mind that, by default,
+[actions/checkout](https://github.com/actions/checkout) only fetches one
+commit, so when using `history` or `upload` mode, you'll want to set
+`fetch-depth: 0` in its input parameters to fetch the entire commit history
+(see examples below).
+
 ### `ipfs-api`
 
-The multiaddr of the API endpoint of the running IPFS node. This is required to
-upload artifacts to either Web3.Storage or an IPFS pinning service. This is
-also required to build a UnixFS directory containing the current version of
-each file.
+The multiaddr of the API endpoint of the running IPFS node. This is required in
+`upload` mode. The examples below show how to configure an IPFS node in a
+GitHub Actions workflow.
+
+The multiaddr of your local IPFS node is most likely
+`/dns/localhost/tcp/5001/http` by default.
 
 ### `w3s-token`
 
-The secret API token for Web3.Storage. If this is provided, all artifacts in
-the repository are uploaded to Web3.Storage.
+The secret API token for Web3.Storage. In `upload` mode, this causes files to
+be uploaded to Web3.Storage.
 
 ### `pin-endpoint`
 
-The URL of the IPFS pinning service API endpoint to use. If this is provided,
-all artifacts in the repository are pinned using this pinning service.
+The URL of the IPFS pinning service API endpoint to use. In `upload` mode, this
+causes files to be pinned with the configured pinning service.
 
 ### `pin-token`
 
 The secret bearer token for the configured IPFS pinning service. This is
 required to pin artifacts using an IPFS pinning service.
 
-## Web3.Storage
+### `dry-run`
 
-To upload content to Web3.Storage, an IPFS node must be running and you must
-pass in your Web3.Storage API token and the mutiaddr of the IPFS node's API
-endpoint. There's an example below for running an IPFS node in a GitHub Actions
-workflow. The action is smart enough to skip any files already uploaded to your
-Web3.Storage account in a previous run.
-
-## Pinning services
-
-To pin content with an IPFS pinning service, you must specify the API endpoint
-of the pinning service and your bearer token. Note that pinning services that
-have their own API may use a separate endpoint for the standardized pinning
-service API. For example, the endpoint for [Pinata](https://www.pinata.cloud/)
-is `https://api.pinata.cloud/psa`. The action is smart enough to skip any files
-already pinned to your account in a previous run.
+Prevents uploading files when used in `upload` mode. Legal in other modes, but
+does nothing. Useful for testing.
 
 ## Output
 
@@ -127,8 +123,9 @@ the content in the archive and don't need artifact metadata. In this list, CIDs
 are deduplicated by their multihash, so if the repository contains a v0 CID and
 a v1 CID with the same multihash, only one will be returned.
 
-The `cids` output will always return the CIDs for all artifacts in the
-repository, even through schema version changes.
+In `history` and `upload` mode, the `cids` output will always return the CIDs
+for all artifacts in the history of the repository, even through schema version
+changes.
 
 ### `artifacts`
 
@@ -136,8 +133,8 @@ The `artifacts` output looks like the example below. It contains the following
 fields:
 
 - `rootCid`: The CID of the UnixFS directory containing the current version of
-  each file in the repository. If we're not running in `validate` mode, or if
-  the `ipfs-api` input was not provided, then this will be `null`.
+  each file in the repository. If we're not running in `upload` mode, then this
+  will be `null`.
 - `artifacts`: An array of all the artifacts in the repository.
   - `path` is the relative path of the artifact file from the root of the
     repository.
@@ -146,7 +143,8 @@ fields:
   - `commit` is the commit the artifact file was pulled from. In `validate`
     mode, this field is always `null`.
     - `commit.rev` is the commit hash.
-    - `commit.date` is the author date in RFC 3339 format, normalized to UTC.
+    - `commit.date` is the committer date in RFC 3339 format, normalized to
+      UTC.
   - `entry` contains the actual contents of the artifact file, except as JSON
     instead of YAML. If a list value is omitted in the artifact file, it's
     serialized in the JSON output as `[]`. If a scalar value is omitted, it's
@@ -178,7 +176,7 @@ fields:
           {
             "name": "Transcript",
             "mediaType": "text/html",
-            "filename": "the-asexual-manifesto-transcript.html",
+            "filename": "the-asexual-manifesto-transcript",
             "cid": "bafybeib2fu4qf44xiyduvhadog5raukc3ajdnd4qpsavyxaa2umzjeif5y"
           }
         ],
@@ -216,21 +214,14 @@ To use the CLI, you must first install [Go](https://go.dev/).
 
 To run the CLI and see the help:
 
-```
+```shell
 go run . --help
 ```
 
 ```
 Host content from Ace Archive on the IPFS network.
 
-To upload content to Web3.Storage, you must specify `--ipfs-api` and
-`--w3s-token`.
-
-To pin content with an IPFS pinning service, you must specify `--ipfs-api`,
-`--pin-endpoint`, and `--pin-token`.
-
-The multiaddr of your local IPFS node is most likely
-`/dns/localhost/tcp/5001/http` by default.
+See the README for details.
 
 Usage:
   artifact-action [flags]
@@ -238,7 +229,7 @@ Usage:
 Flags:
   -h, --help                 help for artifact-action
       --ipfs-api multiaddr   The multiaddr of your IPFS node
-  -m, --mode string          The mode to operate in, either "validate" or "history" (default "validate")
+  -m, --mode string          The mode to operate in, either "validate", "history", or "upload" (default "validate")
   -o, --output string        The output to produce, either "artifacts", "cids", or "summary" (default "summary")
       --path path            The path of the artifact files in the repository (default "artifacts/")
       --pin-endpoint url     The url of the IPFS pinning service API endpoint to use
@@ -249,7 +240,7 @@ Flags:
 
 ## Examples
 
-Get the JSON output for the current version of each artifact.
+Validate the current version of each artifact and get the JSON output for them.
 
 ```yaml
 jobs:
@@ -290,8 +281,7 @@ jobs:
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
 
-Validate the artifact files in the working tree and upload the files to
-Web3.Storage.
+Upload all the files in the history of the repo to Web3.Storage.
 
 ```yaml
 jobs:
@@ -310,9 +300,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           repository: "acearchive/artifacts"
+          fetch-depth: 0
       - name: "Upload artifacts"
         uses: acearchive/artifact-action@v0.3.0
         with:
+          mode: upload
           ipfs-api: "/dns/ipfs-node/tcp/5001/http"
           w3s-token: ${{ secrets.W3S_API_TOKEN }}
 ```
@@ -340,7 +332,7 @@ jobs:
       - name: "Upload artifacts"
         uses: acearchive/artifact-action@v0.3.0
         with:
-          mode: history
+          mode: upload
           ipfs-api: "/dns/ipfs-node/tcp/5001/http"
           pin-endpoint: "https://api.pinata.cloud/psa"
           pin-token: ${{ secrets.PINATA_API_TOKEN }}

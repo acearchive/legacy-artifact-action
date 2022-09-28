@@ -11,8 +11,8 @@ inputs:
     default: "artifacts/"
   mode:
     description: >
-      The mode to operate in, either `validate` or `history`. See the README
-      for details.
+      The mode to operate in, either `validate`, `history`, or `upload`. See
+      the README for details.
     required: true
     default: "validate"
   ipfs-api:
@@ -35,6 +35,11 @@ inputs:
     description: >
       The secret bearer token for the configured IPFS pinning service. This is
       required to pin artifacts using an IPFS pinning service.
+    required: false
+  dry-run:
+    description: >
+      Prevents uploading files when used in `upload` mode. Legal in other
+      modes, but does nothing. Useful for testing.
     required: false
 outputs:
   artifacts:

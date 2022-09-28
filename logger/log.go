@@ -50,3 +50,13 @@ func LogErrorGroup(name string, errList []error) {
 		}
 	}
 }
+
+func LogNotice(msg string) {
+	if cfg.Action() {
+		fmt.Printf("::notice::%s\n", msg)
+	} else {
+		if _, err := fmt.Fprintf(os.Stderr, "\n%s\n\n", msg); err != nil {
+			panic(err)
+		}
+	}
+}

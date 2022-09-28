@@ -32,7 +32,7 @@ func New() (*Guard, error) {
 		return client, nil
 	}
 
-	if !cfg.DoIpfs() {
+	if cfg.IpfsApi() == "" {
 		return nil, ErrNoIpfsApiAddr
 	}
 

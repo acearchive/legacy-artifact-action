@@ -2,6 +2,8 @@ package dir
 
 import (
 	"context"
+	"sort"
+	"strings"
 
 	"github.com/frawleyskid/w3s-upload/client"
 	"github.com/frawleyskid/w3s-upload/parse"
@@ -14,22 +16,20 @@ func DefaultCidPrefix() cid.Prefix {
 	return dag.V1CidPrefix()
 }
 
-func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
-	ipfsClientGuard, err := client.New()
-	if err != nil {
-		return cid.Undef, err
-	}
+// fileMapType is a map of file names to their CIDs.
+type fileMapType = map[string]cid.Cid
 
-	ipfsClient := ipfsClientGuard.Lock()
-	defer ipfsClientGuard.Unlock()
+// artifactMapType is a map of artifact slugs to maps of their files.
+type artifactMapType = map[string]fileMapType
 
-	rootDir := unixfs.NewDirectory(ipfsClient.Dag())
-	rootDir.SetCidBuilder(DefaultCidPrefix())
+func getLatestFiles(artifacts []parse.Artifact) artifactMapType {
+	artifactMap := make(artifactMapType, len(artifacts))
+
+	sort.Slice(artifacts, func(i, j int) bool {
+		return artifacts[j].Commit.Date.Before(artifacts[i].Commit.Date)
+	})
 
 	for _, artifact := range artifacts {
-		artifactDir := unixfs.NewDirectory(ipfsClient.Dag())
-		artifactDir.SetCidBuilder(DefaultCidPrefix())
-
 		entry := struct {
 			Files []struct {
 				Filename string `json:"filename"`
@@ -39,18 +39,62 @@ func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
 
 		artifact.Entry.ToTyped(&entry)
 
+		if len(entry.Files) == 0 {
+			continue
+		}
+
+		var fileMap fileMapType
+		var exists bool
+
+		if fileMap, exists = artifactMap[artifact.Slug]; !exists {
+			fileMap = make(fileMapType)
+			artifactMap[artifact.Slug] = fileMap
+		}
+
 		for _, file := range entry.Files {
-			fileCid, err := cid.Parse(file.Cid)
-			if err != nil {
-				return cid.Undef, err
+			if len(strings.TrimSpace(file.Filename)) == 0 {
+				continue
 			}
 
+			parsedCid, err := cid.Parse(file.Cid)
+			if err != nil {
+				continue
+			}
+
+			if _, exists := fileMap[file.Filename]; !exists {
+				fileMap[file.Filename] = parsedCid
+			}
+		}
+	}
+
+	return artifactMap
+}
+
+func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
+	ipfsClientGuard, err := client.New()
+	if err != nil {
+		return cid.Undef, err
+	}
+
+	ipfsClient := ipfsClientGuard.Lock()
+	defer ipfsClientGuard.Unlock()
+
+	artifactMap := getLatestFiles(artifacts)
+
+	rootDir := unixfs.NewDirectory(ipfsClient.Dag())
+	rootDir.SetCidBuilder(DefaultCidPrefix())
+
+	for artifactSlug, artifactFiles := range artifactMap {
+		artifactDir := unixfs.NewDirectory(ipfsClient.Dag())
+		artifactDir.SetCidBuilder(DefaultCidPrefix())
+
+		for filename, fileCid := range artifactFiles {
 			fileNode, err := ipfsClient.Dag().Get(ctx, fileCid)
 			if err != nil {
 				return cid.Undef, err
 			}
 
-			if err := artifactDir.AddChild(ctx, file.Filename, fileNode); err != nil {
+			if err := artifactDir.AddChild(ctx, filename, fileNode); err != nil {
 				return cid.Undef, err
 			}
 		}
@@ -60,7 +104,7 @@ func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
 			return cid.Undef, err
 		}
 
-		if err := rootDir.AddChild(ctx, artifact.Slug, artifactNode); err != nil {
+		if err := rootDir.AddChild(ctx, artifactSlug, artifactNode); err != nil {
 			return cid.Undef, err
 		}
 

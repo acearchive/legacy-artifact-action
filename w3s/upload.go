@@ -3,6 +3,7 @@ package w3s
 import (
 	"context"
 
+	"github.com/frawleyskid/w3s-upload/cfg"
 	"github.com/frawleyskid/w3s-upload/client"
 	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/frawleyskid/w3s-upload/parse"
@@ -48,6 +49,10 @@ func Upload(ctx context.Context, token string, cidList []cid.Cid) error {
 
 	for currentIndex, currentCid := range filesToUpload {
 		logger.Printf("Uploading (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
+
+		if cfg.DryRun() {
+			continue
+		}
 
 		car, err := PackCar(ctx, ipfsClient, currentCid)
 		if err != nil {

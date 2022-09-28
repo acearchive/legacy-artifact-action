@@ -17,6 +17,8 @@ type Revision struct {
 	Date time.Time
 }
 
+// findRevisions returns all the commits in the git history reachable from
+// `HEAD` and returns them in order from most to least recent.
 func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
 	artifactsGlob := filepath.Join(artifactsPath, fmt.Sprintf("*%s", ArtifactFileExtension))
 
@@ -30,7 +32,7 @@ func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
 		return matches
 	}
 
-	commitIter, err := repo.Log(&git.LogOptions{PathFilter: pathFilter})
+	commitIter, err := repo.Log(&git.LogOptions{PathFilter: pathFilter, Order: git.LogOrderCommitterTime})
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +56,7 @@ func findRevisions(workspacePath, artifactsPath string) ([]Revision, error) {
 					File: *file,
 					Path: stat.Name,
 					Rev:  commit.Hash.String(),
-					Date: commit.Author.When,
+					Date: commit.Committer.When,
 				})
 			}
 		}
