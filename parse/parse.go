@@ -130,7 +130,7 @@ func (e ArtifactEntry) ToGeneric() GenericEntry {
 // Sanitize replaces `map[interface{}]interface{}` values that cannot be
 // serialized to JSON with `map[string]interface{}`.
 func (e GenericEntry) Sanitize() GenericEntry {
-	if generic, ok := dyno.ConvertMapI2MapS(map[string]interface{}(e)).(GenericEntry); ok {
+	if generic, ok := dyno.ConvertMapI2MapS(map[string]interface{}(e)).(map[string]interface{}); ok {
 		return generic
 	}
 

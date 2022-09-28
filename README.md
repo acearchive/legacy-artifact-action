@@ -227,6 +227,7 @@ Usage:
   artifact-action [flags]
 
 Flags:
+      --dry-run              Prevents uploading files when used in upload mode.
   -h, --help                 help for artifact-action
       --ipfs-api multiaddr   The multiaddr of your IPFS node
   -m, --mode string          The mode to operate in, either "validate", "history", or "upload" (default "validate")

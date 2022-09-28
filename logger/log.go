@@ -61,6 +61,16 @@ func LogNotice(msg string) {
 	}
 }
 
+func LogWarning(msg string) {
+	if cfg.Action() {
+		fmt.Printf("::warning::%s\n", msg) //nolint:forbidigo
+	} else {
+		if _, err := fmt.Fprintf(os.Stderr, "Warning: %s\n", msg); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func Exit() {
 	os.Exit(1)
 }

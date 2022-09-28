@@ -53,7 +53,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.DryRun() {
-			logger.LogNotice("This is a dry run. No files will actually be uploaded.")
+			if cfg.Mode() == cfg.ModeUpload {
+				logger.LogNotice("This is a dry run. No files will actually be uploaded.")
+			} else {
+				logger.LogWarning("Using the `dry-run` option is pointless when not in `upload` mode.")
+			}
 		}
 
 		var (
@@ -117,7 +121,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if cfg.DryRun() {
+		if cfg.DryRun() && cfg.Mode() == cfg.ModeUpload {
 			logger.LogNotice("This was a dry run. No files were actually uploaded.")
 		}
 
