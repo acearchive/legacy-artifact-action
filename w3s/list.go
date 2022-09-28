@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frawleyskid/w3s-upload/parse"
+	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
 )
 

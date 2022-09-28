@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/frawleyskid/w3s-upload/cfg"
+	"github.com/acearchive/artifact-action/cfg"
 )
 
 func Printf(format string, a ...interface{}) {

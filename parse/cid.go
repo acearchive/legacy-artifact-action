@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"github.com/frawleyskid/w3s-upload/logger"
+	"github.com/acearchive/artifact-action/logger"
 	"github.com/ipfs/go-cid"
 )
 

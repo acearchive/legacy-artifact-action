@@ -3,10 +3,10 @@ package w3s
 import (
 	"context"
 
-	"github.com/frawleyskid/w3s-upload/cfg"
-	"github.com/frawleyskid/w3s-upload/client"
-	"github.com/frawleyskid/w3s-upload/logger"
-	"github.com/frawleyskid/w3s-upload/parse"
+	"github.com/acearchive/artifact-action/cfg"
+	"github.com/acearchive/artifact-action/client"
+	"github.com/acearchive/artifact-action/logger"
+	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
 	"github.com/web3-storage/go-w3s-client"
 )

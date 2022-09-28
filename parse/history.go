@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frawleyskid/w3s-upload/logger"
+	"github.com/acearchive/artifact-action/logger"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )

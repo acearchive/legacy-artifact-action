@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/frawleyskid/w3s-upload/cfg"
+	"github.com/acearchive/artifact-action/cfg"
 	api "github.com/ipfs/go-ipfs-http-client"
 	"github.com/multiformats/go-multiaddr"
 )

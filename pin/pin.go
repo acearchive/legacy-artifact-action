@@ -3,9 +3,9 @@ package pin
 import (
 	"context"
 
-	"github.com/frawleyskid/w3s-upload/cfg"
-	"github.com/frawleyskid/w3s-upload/logger"
-	"github.com/frawleyskid/w3s-upload/parse"
+	"github.com/acearchive/artifact-action/cfg"
+	"github.com/acearchive/artifact-action/logger"
+	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
 	pinclient "github.com/ipfs/go-pinning-service-http-client"
 )

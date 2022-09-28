@@ -1,4 +1,4 @@
-module github.com/frawleyskid/w3s-upload
+module github.com/acearchive/artifact-action
 
 go 1.18
 
@@ -6,9 +6,10 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/icza/dyno v0.0.0-20220812133438-f0b6f8a18845
 	github.com/ipfs/go-cid v0.1.0
-	github.com/ipfs/go-ipfs-api v0.3.0
 	github.com/ipfs/go-ipfs-http-client v0.3.1
+	github.com/ipfs/go-merkledag v0.6.0
 	github.com/ipfs/go-pinning-service-http-client v0.1.2
+	github.com/ipfs/go-unixfs v0.4.0
 	github.com/ipld/go-car v0.5.0
 	github.com/multiformats/go-multiaddr v0.7.0
 	github.com/spf13/cobra v1.5.0
@@ -59,11 +60,9 @@ require (
 	github.com/ipfs/go-ipld-legacy v0.1.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.3.0 // indirect
-	github.com/ipfs/go-merkledag v0.6.0 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/ipfs/go-mfs v0.2.1 // indirect
 	github.com/ipfs/go-path v0.2.1 // indirect
-	github.com/ipfs/go-unixfs v0.4.0 // indirect
 	github.com/ipfs/go-unixfsnode v1.4.0 // indirect
 	github.com/ipfs/go-verifcid v0.0.1 // indirect
 	github.com/ipfs/interface-go-ipfs-core v0.7.0 // indirect
@@ -77,7 +76,6 @@ require (
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
-	github.com/libp2p/go-flow-metrics v0.0.3 // indirect
 	github.com/libp2p/go-libp2p-core v0.11.0 // indirect
 	github.com/libp2p/go-libp2p-pnet v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-transport-upgrader v0.5.0 // indirect
@@ -118,7 +116,6 @@ require (
 	github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210303213153-67a261a1d291 // indirect
 	github.com/whyrusleeping/chunker v0.0.0-20181014151217-fe64bd25879f // indirect
-	github.com/whyrusleeping/tar-utils v0.0.0-20180509141711-8c6c8ba81d5c // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect

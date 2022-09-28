@@ -1,6 +1,6 @@
 package main
 
-import "github.com/frawleyskid/w3s-upload/cmd"
+import "github.com/acearchive/artifact-action/cmd"
 
 func main() {
 	cmd.Execute()

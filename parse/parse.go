@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/frawleyskid/w3s-upload/logger"
+	"github.com/acearchive/artifact-action/logger"
 	"github.com/icza/dyno"
 	"gopkg.in/yaml.v2"
 )

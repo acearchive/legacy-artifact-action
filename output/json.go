@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/frawleyskid/w3s-upload/cfg"
-	"github.com/frawleyskid/w3s-upload/parse"
+	"github.com/acearchive/artifact-action/cfg"
+	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
 )
 

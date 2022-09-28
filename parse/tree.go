@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/frawleyskid/w3s-upload/logger"
+	"github.com/acearchive/artifact-action/logger"
 )
 
 func logArtifactErrors(artifactErrors []error) {
