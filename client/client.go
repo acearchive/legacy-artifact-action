@@ -9,7 +9,7 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-var ErrNoIpfsApiAddr = errors.New("the multiaddr of the IPFS API was not provided")
+var ErrNoIpfsAPIAddr = errors.New("the multiaddr of the IPFS API was not provided")
 
 var client *Guard
 
@@ -32,11 +32,11 @@ func New() (*Guard, error) {
 		return client, nil
 	}
 
-	if cfg.IpfsApi() == "" {
-		return nil, ErrNoIpfsApiAddr
+	if cfg.IpfsAPI() == "" {
+		return nil, ErrNoIpfsAPIAddr
 	}
 
-	multiaddr, err := multiaddr.NewMultiaddr(cfg.IpfsApi())
+	multiaddr, err := multiaddr.NewMultiaddr(cfg.IpfsAPI())
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/frawleyskid/w3s-upload/cfg"
 	"github.com/frawleyskid/w3s-upload/dir"
@@ -18,9 +17,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	ErrInvalidMode = errors.New("invalid mode parameter")
-)
+var ErrInvalidMode = errors.New("invalid mode parameter")
 
 func init() {
 	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
@@ -112,6 +109,7 @@ var rootCmd = &cobra.Command{
 				if err := pin.Pin(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsToUpload); err != nil {
 					return err
 				}
+			case cfg.UploadNone:
 			}
 		}
 
@@ -130,6 +128,6 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		logger.LogError(err)
-		os.Exit(1)
+		logger.Exit()
 	}
 }

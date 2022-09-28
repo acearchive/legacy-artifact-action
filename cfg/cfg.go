@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrMissingIpfsApi            = errors.New("in `upload` mode, you must supply the multiaddr of a running IPFS node")
+	ErrMissingIpfsAPI            = errors.New("in `upload` mode, you must supply the multiaddr of a running IPFS node")
 	ErrNotUploadMode             = errors.New("some of the given parameters are illegal when not in `upload` mode")
 	ErrMissingUploadParams       = errors.New("in `upload` mode, you must supply parameters to configure where to upload files to")
 	ErrMissingPinParams          = errors.New("to upload to a pinning service, you must provide both the endpoint URL and your secret token")
@@ -96,7 +96,7 @@ func W3SToken() string {
 	return viper.GetString("w3s-token")
 }
 
-func IpfsApi() string {
+func IpfsAPI() string {
 	return viper.GetString("ipfs-api")
 }
 
@@ -133,22 +133,23 @@ func Destination() UploadDestination {
 }
 
 func ValidateParams() error {
-	isIpfsApi := viper.IsSet("ipfs-api")
+	isIpfsAPI := viper.IsSet("ipfs-api")
 	isW3sToken := viper.IsSet("w3s-token")
 	isPinEndpoint := viper.IsSet("pin-endpoint")
 	isPinToken := viper.IsSet("pin-token")
 
 	if Mode() == ModeUpload {
-		if !isIpfsApi {
-			return ErrMissingIpfsApi
-		} else if !(isW3sToken || isPinEndpoint || isPinToken) {
+		switch {
+		case !isIpfsAPI:
+			return ErrMissingIpfsAPI
+		case !(isW3sToken || isPinEndpoint || isPinToken):
 			return ErrMissingUploadParams
-		} else if isW3sToken && (isPinEndpoint || isPinToken) {
+		case isW3sToken && (isPinEndpoint || isPinToken):
 			return ErrOverloadedPinningServices
-		} else if isPinEndpoint != isPinToken {
+		case isPinEndpoint != isPinToken:
 			return ErrMissingPinParams
 		}
-	} else if isIpfsApi || isW3sToken || isPinEndpoint || isPinToken {
+	} else if isIpfsAPI || isW3sToken || isPinEndpoint || isPinToken {
 		return ErrNotUploadMode
 	}
 

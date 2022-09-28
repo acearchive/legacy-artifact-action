@@ -11,7 +11,7 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-const prettyJsonIndent = "  "
+const prettyJSONIndent = "  "
 
 var ErrInvalidOutput = errors.New("invalid output parameter")
 
@@ -37,9 +37,12 @@ func initializeNilSlicesOfValue(value reflect.Value) {
 					initializeNilSlicesOfValue(field.Index(sliceIndex))
 				}
 			}
+		default:
+			continue
 		}
 	}
 }
+
 func initializeNilSlices(value interface{}) {
 	initializeNilSlicesOfValue(reflect.ValueOf(value).Elem())
 }
@@ -56,7 +59,7 @@ func marshalArtifact(output Output, pretty bool) (string, error) {
 	)
 
 	if pretty {
-		marshalledOutput, err = json.MarshalIndent(output, "", prettyJsonIndent)
+		marshalledOutput, err = json.MarshalIndent(output, "", prettyJSONIndent)
 	} else {
 		marshalledOutput, err = json.Marshal(output)
 	}
@@ -81,7 +84,7 @@ func marshalCid(cids []cid.Cid, pretty bool) (string, error) {
 	}
 
 	if pretty {
-		marshalledOutput, err = json.MarshalIndent(marshalledCids, "", prettyJsonIndent)
+		marshalledOutput, err = json.MarshalIndent(marshalledCids, "", prettyJSONIndent)
 	} else {
 		marshalledOutput, err = json.Marshal(marshalledCids)
 	}
@@ -100,14 +103,14 @@ func Print(output Output, cidList []cid.Cid) error {
 			return err
 		}
 
-		fmt.Printf("::set-output name=artifacts::%s\n", artifactOutput)
+		fmt.Printf("::set-output name=artifacts::%s\n", artifactOutput) //nolint:forbidigo
 
 		cidOutput, err := marshalCid(cidList, false)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("::set-output name=cids::%s\n", cidOutput)
+		fmt.Printf("::set-output name=cids::%s\n", cidOutput) //nolint:forbidigo
 
 		return nil
 	}
@@ -119,14 +122,14 @@ func Print(output Output, cidList []cid.Cid) error {
 			return err
 		}
 
-		fmt.Println(artifactOutput)
+		fmt.Println(artifactOutput) //nolint:forbidigo
 	case cfg.OutputCids:
 		cidOutput, err := marshalCid(cidList, true)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println(cidOutput)
+		fmt.Println(cidOutput) //nolint:forbidigo
 	case cfg.OutputSummary:
 	default:
 		return fmt.Errorf("%w: %s", ErrInvalidOutput, outputMode)

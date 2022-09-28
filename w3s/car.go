@@ -2,10 +2,11 @@ package w3s
 
 import (
 	"context"
+	"io"
+
 	"github.com/ipfs/go-cid"
 	api "github.com/ipfs/go-ipfs-http-client"
 	"github.com/ipld/go-car"
-	"io"
 )
 
 func PackCar(ctx context.Context, client *api.HttpApi, id cid.Cid) (io.ReadCloser, error) {
@@ -17,6 +18,7 @@ func PackCar(ctx context.Context, client *api.HttpApi, id cid.Cid) (io.ReadClose
 			_ = carWriter.CloseWithError(err)
 			return
 		}
+
 		_ = carWriter.Close()
 	}()
 

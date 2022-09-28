@@ -41,6 +41,7 @@ func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
 		for _, currentCid := range artifact.listCids() {
 			if _, alreadyExists := contentSet[ContentKeyFromCid(currentCid)]; !alreadyExists {
 				contentSet[ContentKeyFromCid(currentCid)] = struct{}{}
+
 				cidList = append(cidList, currentCid)
 			}
 		}

@@ -29,10 +29,13 @@ type InvalidArtifactError struct {
 
 func (e InvalidArtifactError) Error() string {
 	var builder strings.Builder
+
 	builder.WriteString(fmt.Sprintf("%s:\n", e.FilePath))
+
 	for _, reason := range e.Reasons {
 		builder.WriteString(fmt.Sprintf("  %s %s\n", reason.Field.Literal(), reason.Reason))
 	}
+
 	return builder.String()
 }
 
@@ -199,11 +202,12 @@ func validateFiles(entry ArtifactEntry, reportError ErrorCallback) {
 			}
 		}
 
-		if len(fileEntry.Filename) == 0 {
+		switch {
+		case len(fileEntry.Filename) == 0:
 			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "does not have a file name")
-		} else if len(strings.TrimSpace(fileEntry.Filename)) == 0 {
+		case len(strings.TrimSpace(fileEntry.Filename)) == 0:
 			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "has a file name that is entirely whitespace")
-		} else if !fileNameRegex.MatchString(fileEntry.Filename) {
+		case !fileNameRegex.MatchString(fileEntry.Filename):
 			reportError(FieldFileFilename.Of(FieldFiles.At(fileIndex)), "contains illegal characters")
 		}
 	}
@@ -217,10 +221,10 @@ func validateLinks(entry ArtifactEntry, reportError ErrorCallback) {
 	for linkIndex, linkEntry := range entry.Links {
 		validateIsNotEmpty(FieldLinkName.Of(FieldLinks.At(linkIndex)), linkEntry.Name, reportError)
 
-		if linkUrl, err := url.Parse(linkEntry.Url); err != nil {
-			reportError(FieldLinkUrl.Of(FieldLinks.At(linkIndex)), "is not a valid URL")
-		} else if linkUrl.Scheme != "https" {
-			reportError(FieldLinkUrl.Of(FieldLinks.At(linkIndex)), "is not an HTTPS URL")
+		if linkURL, err := url.Parse(linkEntry.URL); err != nil {
+			reportError(FieldLinkURL.Of(FieldLinks.At(linkIndex)), "is not a valid URL")
+		} else if linkURL.Scheme != "https" {
+			reportError(FieldLinkURL.Of(FieldLinks.At(linkIndex)), "is not an HTTPS URL")
 		}
 	}
 }
@@ -253,10 +257,10 @@ func ValidateEntry(entry ArtifactEntry, filePath string) error {
 
 	if len(reasons) == 0 {
 		return nil
-	} else {
-		return InvalidArtifactError{
-			FilePath: filePath,
-			Reasons:  reasons,
-		}
+	}
+
+	return InvalidArtifactError{
+		FilePath: filePath,
+		Reasons:  reasons,
 	}
 }

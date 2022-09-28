@@ -31,7 +31,7 @@ type ArtifactEntryFile struct {
 
 type ArtifactEntryLink struct {
 	Name string `yaml:"name" json:"name"`
-	Url  string `yaml:"url" json:"url"`
+	URL  string `yaml:"url" json:"url"`
 }
 
 type ArtifactEntry struct {
@@ -63,7 +63,7 @@ const (
 	FieldFileCid         EntryField = "cid"
 	FieldLinks           EntryField = "links"
 	FieldLinkName        EntryField = "name"
-	FieldLinkUrl         EntryField = "url"
+	FieldLinkURL         EntryField = "url"
 	FieldPeople          EntryField = "people"
 	FieldIdentities      EntryField = "identities"
 	FieldFromYear        EntryField = "fromYear"

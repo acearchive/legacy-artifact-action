@@ -1,16 +1,17 @@
 package parse
 
 import (
-	"github.com/frawleyskid/w3s-upload/logger"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/frawleyskid/w3s-upload/logger"
 )
 
 func logArtifactErrors(artifactErrors []error) {
 	logger.LogError(ErrInvalidArtifactFiles)
 	logger.LogErrorGroup("Artifact file errors:", artifactErrors)
-	os.Exit(1)
+	logger.Exit()
 }
 
 func Tree(workspacePath, artifactsPath string) ([]Artifact, error) {

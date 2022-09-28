@@ -1,34 +1,27 @@
 linters:
-  enable:
-    - bodyclose
-    - contextcheck
-    - dupl
-    - errname
-    - errorlint
-    - exhaustive
-    - exportloopref
-    - forcetypeassert
-    - goconst
-    - gocritic
-    - godox
-    - goerr113
-    - gofmt
-    - gomnd
-    - ifshort
-    - makezero
-    - misspell
-    - nestif
-    - nilerr
-    - nilnil
-    - noctx
-    - prealloc
-    - predeclared
-    - testpackage
-    - unconvert
-    - unparam
-    - varnamelen
-    - whitespace
+  presets:
+    - metalinter
+    - bugs
+    - error
+    - style
+    - unused
+    - performance
+    - format
+    - import
+    - module
+    - comment
+    - test
+
+  disable:
+    - wrapcheck
+    - exhaustivestruct
+    - exhaustruct
+    - gochecknoinits
+    - gochecknoglobals
+    - lll
 
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  nlreturn:
+    block-size: 2

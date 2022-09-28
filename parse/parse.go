@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"path/filepath"
+	"strings"
+
 	"github.com/frawleyskid/w3s-upload/logger"
 	"github.com/icza/dyno"
 	"gopkg.in/yaml.v2"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 const frontMatterDelimiter = "---"
@@ -111,17 +111,17 @@ func parseGenericEntry(frontMatter string) (GenericEntry, error) {
 }
 
 func (e ArtifactEntry) ToGeneric() GenericEntry {
-	rawJson, err := json.Marshal(e)
+	rawJSON, err := json.Marshal(e)
 	if err != nil {
 		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
-		os.Exit(1)
+		logger.Exit()
 	}
 
 	entry := GenericEntry{}
 
-	if err := json.Unmarshal(rawJson, &entry); err != nil {
+	if err := json.Unmarshal(rawJSON, &entry); err != nil {
 		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
-		os.Exit(1)
+		logger.Exit()
 	}
 
 	return entry.Sanitize()
@@ -130,19 +130,23 @@ func (e ArtifactEntry) ToGeneric() GenericEntry {
 // Sanitize replaces `map[interface{}]interface{}` values that cannot be
 // serialized to JSON with `map[string]interface{}`.
 func (e GenericEntry) Sanitize() GenericEntry {
-	return dyno.ConvertMapI2MapS(map[string]interface{}(e)).(map[string]interface{})
+	if generic, ok := dyno.ConvertMapI2MapS(map[string]interface{}(e)).(GenericEntry); ok {
+		return generic
+	}
+
+	panic("failed type assertion, this is a bug")
 }
 
 func (e GenericEntry) ToTyped(value interface{}) {
-	rawJson, err := json.Marshal(e)
+	rawJSON, err := json.Marshal(e)
 	if err != nil {
 		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
-		os.Exit(1)
+		logger.Exit()
 	}
 
-	if err := json.Unmarshal(rawJson, value); err != nil {
+	if err := json.Unmarshal(rawJSON, value); err != nil {
 		logger.LogError(fmt.Errorf("%w\n%#v", err, e))
-		os.Exit(1)
+		logger.Exit()
 	}
 }
 

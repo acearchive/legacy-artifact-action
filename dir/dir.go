@@ -43,8 +43,10 @@ func getLatestFiles(artifacts []parse.Artifact) artifactMapType {
 			continue
 		}
 
-		var fileMap fileMapType
-		var exists bool
+		var (
+			fileMap fileMapType
+			exists  bool
+		)
 
 		if fileMap, exists = artifactMap[artifact.Slug]; !exists {
 			fileMap = make(fileMapType)
@@ -81,10 +83,14 @@ func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
 
 	artifactMap := getLatestFiles(artifacts)
 
+	// Unsure why this is failing since it doesn't take a context.
+	//nolint:contextcheck
 	rootDir := unixfs.NewDirectory(ipfsClient.Dag())
 	rootDir.SetCidBuilder(DefaultCidPrefix())
 
 	for artifactSlug, artifactFiles := range artifactMap {
+		// Unsure why this is failing since it doesn't take a context.
+		//nolint:contextcheck
 		artifactDir := unixfs.NewDirectory(ipfsClient.Dag())
 		artifactDir.SetCidBuilder(DefaultCidPrefix())
 

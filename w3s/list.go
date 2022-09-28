@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frawleyskid/w3s-upload/parse"
-	"github.com/ipfs/go-cid"
 	"net/http"
 	"time"
+
+	"github.com/frawleyskid/w3s-upload/parse"
+	"github.com/ipfs/go-cid"
 )
 
 const iso8601 = "2006-01-02T15:04:05.999Z07:00"
 
-var ErrHttpStatus = errors.New("unexpected response status")
+var ErrHTTPStatus = errors.New("unexpected response status")
 
 // In v0.0.5 of github.com/web3-storage/go-w3s-client, I've been experiencing an
 // issue where `Client.List` doesn't return the last page, so for the time-being
@@ -25,9 +26,9 @@ type w3sStatus struct {
 }
 
 func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sStatus, error) {
-	requestUrl := fmt.Sprintf("https://api.web3.storage/user/uploads/?before=%s", before.Format(iso8601))
+	requestURL := fmt.Sprintf("https://api.web3.storage/user/uploads/?before=%s", before.Format(iso8601))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", requestUrl, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +41,7 @@ func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sS
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: %d", ErrHttpStatus, res.StatusCode)
+		return nil, fmt.Errorf("%w: %d", ErrHTTPStatus, res.StatusCode)
 	}
 
 	var page []w3sStatus
