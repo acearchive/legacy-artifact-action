@@ -24,6 +24,7 @@ func init() {
 	rootCmd.Flags().StringP("mode", "m", string(cfg.DefaultMode), "The mode to operate in, either \"validate\", \"history\", or \"upload\"")
 	rootCmd.Flags().String("path", cfg.DefaultPath, "The `path` of the artifact files in the repository")
 	rootCmd.Flags().String("w3s-token", "", "The secret API `token` for Web3.Storage")
+	rootCmd.Flags().Bool("w3s-pin", false, "Use the pinning service provided by Web3.Storage")
 	rootCmd.Flags().String("ipfs-api", "", "The `multiaddr` of your IPFS node")
 	rootCmd.Flags().String("pin-endpoint", "", "The `url` of the IPFS pinning service API endpoint to use")
 	rootCmd.Flags().String("pin-token", "", "The secret bearer `token` for the configured IPFS pinning service")
@@ -91,26 +92,25 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.Mode() == cfg.ModeUpload {
-			cidsToUpload := make([]cid.Cid, len(cidsInArtifacts), len(cidsInArtifacts)+1)
-			copy(cidsToUpload, cidsInArtifacts)
-
 			rootCid, err := dir.Build(ctx, artifacts)
 			if err != nil {
 				return err
 			}
-
-			cidsToUpload = append(cidsToUpload, rootCid)
 
 			rootCidStr := rootCid.String()
 			actionOutput.RootCid = &rootCidStr
 
 			switch cfg.Destination() {
 			case cfg.UploadW3S:
-				if err := w3s.Upload(ctx, cfg.W3SToken(), cidsToUpload); err != nil {
+				if err := w3s.Upload(ctx, cfg.W3SToken(), cidsInArtifacts, rootCid); err != nil {
 					return err
 				}
 			case cfg.UploadPin:
-				if err := pin.Pin(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsToUpload); err != nil {
+				cidsToUpload := make([]cid.Cid, len(cidsInArtifacts), len(cidsInArtifacts)+1)
+				copy(cidsToUpload, cidsInArtifacts)
+				cidsToUpload = append(cidsToUpload, rootCid)
+
+				if err := pin.PinDeduplicated(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsToUpload); err != nil {
 					return err
 				}
 			case cfg.UploadNone:

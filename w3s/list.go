@@ -59,7 +59,7 @@ func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sS
 	return page, nil
 }
 
-func listExistingCids(ctx context.Context, token string) (map[parse.ContentKey]struct{}, error) {
+func listExistingCids(ctx context.Context, token string) (parse.ContentSet, error) {
 	cidSet := make(map[parse.ContentKey]struct{})
 	pagingParameter := time.Now()
 

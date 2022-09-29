@@ -25,6 +25,12 @@ inputs:
       The secret API token for Web3.Storage. If this is provided, all artifacts
       in the repository are uploaded to Web3.Storage.
     required: false
+  w3s-pin:
+    description: >
+      If this is `true`, then the Web3.Storage pinning service API will be used
+      in addition to their CAR upload endpoint for improved performance.
+    required: true
+    default: "false"
   pin-endpoint:
     description: >
       The URL of the IPFS pinning service API endpoint to use. If this is

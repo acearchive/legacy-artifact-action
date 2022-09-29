@@ -12,6 +12,7 @@ var (
 	ErrMissingUploadParams       = errors.New("in `upload` mode, you must supply parameters to configure where to upload files to")
 	ErrMissingPinParams          = errors.New("to upload to a pinning service, you must provide both the endpoint URL and your secret token")
 	ErrOverloadedPinningServices = errors.New("you cannot upload to both Web3.Storage and a pinning service at the same time")
+	ErrW3SPinWithoutW3S          = errors.New("cannot use `w3s-pin` without `w3s-token`")
 	ErrInvalidOutput             = errors.New("this is not a valid output type; check the README")
 	ErrInvalidMode               = errors.New("this is not a valid mode; check the README")
 )
@@ -112,6 +113,10 @@ func W3SToken() string {
 	return viper.GetString("w3s-token")
 }
 
+func W3SPin() bool {
+	return viper.GetBool("w3s-pin")
+}
+
 func IpfsAPI() string {
 	return viper.GetString("ipfs-api")
 }
@@ -158,7 +163,8 @@ func ValidateParams() error {
 	}
 
 	isIpfsAPI := viper.GetString("ipfs-api") != ""
-	isW3sToken := viper.GetString("w3s-token") != ""
+	isW3SToken := viper.GetString("w3s-token") != ""
+	isW3SPin := viper.GetBool("w3s-pin")
 	isPinEndpoint := viper.GetString("pin-endpoint") != ""
 	isPinToken := viper.GetString("pin-token") != ""
 
@@ -166,14 +172,16 @@ func ValidateParams() error {
 		switch {
 		case !isIpfsAPI:
 			return ErrMissingIpfsAPI
-		case !(isW3sToken || isPinEndpoint || isPinToken):
+		case !(isW3SToken || isPinEndpoint || isPinToken):
 			return ErrMissingUploadParams
-		case isW3sToken && (isPinEndpoint || isPinToken):
+		case isW3SToken && (isPinEndpoint || isPinToken):
 			return ErrOverloadedPinningServices
+		case isW3SPin && !isW3SToken:
+			return ErrW3SPinWithoutW3S
 		case isPinEndpoint != isPinToken:
 			return ErrMissingPinParams
 		}
-	} else if isIpfsAPI || isW3sToken || isPinEndpoint || isPinToken {
+	} else if isIpfsAPI || isW3SToken || isW3SPin || isPinEndpoint || isPinToken {
 		return ErrNotUploadMode
 	}
 

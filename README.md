@@ -93,6 +93,15 @@ The multiaddr of your local IPFS node is most likely
 The secret API token for Web3.Storage. In `upload` mode, this causes files to
 be uploaded to Web3.Storage.
 
+### `w3s-pin`
+
+If this is `true`, then the Web3.Storage pinning service API will be used in
+addition to their CAR upload endpoint for improved performance. Only enable
+this if your Web3.Storage account has access to their pinning service API,
+which is in closed beta at time of writing.
+
+This option is only valid in `upload` mode when `w3s-token` is set.
+
 ### `pin-endpoint`
 
 The URL of the IPFS pinning service API endpoint to use. In `upload` mode, this
@@ -160,7 +169,7 @@ fields:
 
 ```json
 {
-  "rootCid": "bafybeiabf334qobjurmsp6kjytj2k4ociyor56oomdxhlwt4zvi64prmti",
+  "rootCid": "bafybeibvohqqj434rtvpfwutmnwtdes2qolqvpyiz7oqh7kitnsvf5ufyy",
   "artifacts": [
     {
       "path": "artifacts/orlando-the-asexual-manifesto.md",
@@ -244,6 +253,7 @@ Flags:
       --pin-endpoint url     The url of the IPFS pinning service API endpoint to use
       --pin-token token      The secret bearer token for the configured IPFS pinning service
   -r, --repo path            The path of the git repo containing the artifact files (default ".")
+      --w3s-pin              Use the pinning service provided by Web3.Storage
       --w3s-token token      The secret API token for Web3.Storage
 ```
 
@@ -263,7 +273,7 @@ jobs:
           repository: "acearchive/artifacts"
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@v0.3.0
+        uses: acearchive/artifact-action@main
       - name: "Do something with the artifacts"
         run: "echo ${{ steps.get_artifacts.outputs.artifacts }}"
 ```
@@ -283,7 +293,7 @@ jobs:
           fetch-depth: 0
       - name: "Get artifacts"
         id: get_artifacts
-        uses: acearchive/artifact-action@v0.3.0
+        uses: acearchive/artifact-action@main
         with:
           mode: history
       - name: "Do something with the artifacts"
@@ -311,7 +321,7 @@ jobs:
           repository: "acearchive/artifacts"
           fetch-depth: 0
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@v0.3.0
+        uses: acearchive/artifact-action@main
         with:
           mode: upload
           ipfs-api: "/dns/ipfs-node/tcp/5001/http"
@@ -339,7 +349,7 @@ jobs:
           repository: "acearchive/artifacts"
           fetch-depth: 0
       - name: "Upload artifacts"
-        uses: acearchive/artifact-action@v0.3.0
+        uses: acearchive/artifact-action@main
         with:
           mode: upload
           ipfs-api: "/dns/ipfs-node/tcp/5001/http"
