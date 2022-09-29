@@ -72,7 +72,9 @@ func Upload(ctx context.Context, token string, cidList []cid.Cid, directoryCid c
 			return err
 		}
 	} else {
-		return uploadWithoutPinning(ctx, token, w3sClient, ipfsClientGuard, cidList, existingContent)
+		if err := uploadWithoutPinning(ctx, token, w3sClient, ipfsClientGuard, cidList, existingContent); err != nil {
+			return err
+		}
 	}
 
 	ipfsClient := ipfsClientGuard.Lock()
