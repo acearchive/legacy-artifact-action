@@ -112,6 +112,10 @@ func Print(output Output, cidList []cid.Cid) error {
 
 		fmt.Printf("::set-output name=cids::%s\n", cidOutput) //nolint:forbidigo
 
+		if output.RootCid != nil {
+			fmt.Printf("::set-output name=root-cid::%s\n", *output.RootCid) //nolint:forbidigo
+		}
+
 		return nil
 	}
 
@@ -130,6 +134,10 @@ func Print(output Output, cidList []cid.Cid) error {
 		}
 
 		fmt.Println(cidOutput) //nolint:forbidigo
+	case cfg.OutputRootCid:
+		if output.RootCid != nil {
+			fmt.Println(*output.RootCid) //nolint:forbidigo
+		}
 	case cfg.OutputSummary:
 	default:
 		return fmt.Errorf("%w: %s", ErrInvalidOutput, outputMode)

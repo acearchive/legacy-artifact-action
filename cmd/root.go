@@ -27,8 +27,8 @@ func init() {
 	rootCmd.Flags().String("ipfs-api", "", "The `multiaddr` of your IPFS node")
 	rootCmd.Flags().String("pin-endpoint", "", "The `url` of the IPFS pinning service API endpoint to use")
 	rootCmd.Flags().String("pin-token", "", "The secret bearer `token` for the configured IPFS pinning service")
-	rootCmd.Flags().StringP("output", "o", "summary", "The output to produce, either \"artifacts\", \"cids\", or \"summary\"")
-	rootCmd.Flags().Bool("dry-run", false, "Prevents uploading files when used in upload mode.")
+	rootCmd.Flags().StringP("output", "o", "", "Print the given output to stdout instead of summary statistics")
+	rootCmd.Flags().Bool("dry-run", false, "Prevents uploading files when used in upload mode")
 	rootCmd.Flags().Bool("action", false, "Run this tool as a GitHub Action")
 
 	if err := rootCmd.Flags().MarkHidden("action"); err != nil {

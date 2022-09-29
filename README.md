@@ -110,9 +110,11 @@ does nothing. Useful for testing.
 
 ## Output
 
-This tool produces two JSON outputs:
+This tool produces three outputs:
 
 - `artifacts` is JSON document describing all the artifacts in the repository.
+- `root-cid` is the CID of the UnixFS directory containing the current version
+  of each file in the repository.
 - `cids` is a JSON array containing a deduplicated set of all the CIDs
   contained in artifacts in the repository.
 
@@ -126,6 +128,12 @@ a v1 CID with the same multihash, only one will be returned.
 In `history` and `upload` mode, the `cids` output will always return the CIDs
 for all artifacts in the history of the repository, even through schema version
 changes.
+
+### `root-cid`
+
+The `root-cid` output is just the `rootCid` value from the `artifacts` output,
+provided as a separate output to avoid the need to do JSON parsing when this is
+the only value you need.
 
 ### `artifacts`
 
@@ -227,11 +235,11 @@ Usage:
   artifact-action [flags]
 
 Flags:
-      --dry-run              Prevents uploading files when used in upload mode.
+      --dry-run              Prevents uploading files when used in upload mode
   -h, --help                 help for artifact-action
       --ipfs-api multiaddr   The multiaddr of your IPFS node
   -m, --mode string          The mode to operate in, either "validate", "history", or "upload" (default "validate")
-  -o, --output string        The output to produce, either "artifacts", "cids", or "summary" (default "summary")
+  -o, --output string        Print the given output to stdout instead of summary statistics
       --path path            The path of the artifact files in the repository (default "artifacts/")
       --pin-endpoint url     The url of the IPFS pinning service API endpoint to use
       --pin-token token      The secret bearer token for the configured IPFS pinning service

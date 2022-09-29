@@ -12,6 +12,7 @@ var (
 	ErrMissingUploadParams       = errors.New("in `upload` mode, you must supply parameters to configure where to upload files to")
 	ErrMissingPinParams          = errors.New("to upload to a pinning service, you must provide both the endpoint URL and your secret token")
 	ErrOverloadedPinningServices = errors.New("you cannot upload to both Web3.Storage and a pinning service at the same time")
+	ErrInvalidOutput             = errors.New("this is not a valid output type; check the README")
 )
 
 type OperatingMode string
@@ -27,8 +28,16 @@ type OutputType string
 const (
 	OutputArtifacts OutputType = "artifacts"
 	OutputCids      OutputType = "cids"
-	OutputSummary   OutputType = "summary"
+	OutputRootCid   OutputType = "root-cid"
+	OutputSummary   OutputType = ""
 )
+
+var allOutputs = map[OutputType]struct{}{
+	OutputArtifacts: {},
+	OutputCids:      {},
+	OutputRootCid:   {},
+	OutputSummary:   {},
+}
 
 type UploadDestination string
 
@@ -151,6 +160,10 @@ func ValidateParams() error {
 		}
 	} else if isIpfsAPI || isW3sToken || isPinEndpoint || isPinToken {
 		return ErrNotUploadMode
+	}
+
+	if _, isValid := allOutputs[Output()]; !isValid {
+		return ErrInvalidOutput
 	}
 
 	return nil

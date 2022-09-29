@@ -49,6 +49,10 @@ outputs:
     description: >
       A JSON array of the CIDs contained in artifacts in the repository,
       deduplicated by their multihash.
+  root-cid:
+    description: >
+      The CID of the UnixFS directory containing the current version of each
+      file in the repository.
 runs:
   using: "docker"
   image: "Dockerfile"
