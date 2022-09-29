@@ -47,12 +47,10 @@ func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid, existin
 	for currentIndex, currentCid := range filesToUpload {
 		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 
-		if cfg.DryRun() {
-			continue
-		}
-
-		if _, err := client.Add(ctx, currentCid); err != nil {
-			return err
+		if !cfg.DryRun() {
+			if _, err := client.Add(ctx, currentCid); err != nil {
+				return err
+			}
 		}
 	}
 

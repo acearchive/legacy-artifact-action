@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/acearchive/artifact-action/logger"
 	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
 )
@@ -60,7 +61,7 @@ func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sS
 }
 
 func listExistingCids(ctx context.Context, token string) (parse.ContentSet, error) {
-	cidSet := make(map[parse.ContentKey]struct{})
+	existingContent := make(map[parse.ContentKey]struct{})
 	pagingParameter := time.Now()
 
 	for {
@@ -80,9 +81,11 @@ func listExistingCids(ctx context.Context, token string) (parse.ContentSet, erro
 			}
 
 			pagingParameter = status.Created
-			cidSet[parse.ContentKeyFromCid(currentCid)] = struct{}{}
+			existingContent[parse.ContentKeyFromCid(currentCid)] = struct{}{}
 		}
 	}
 
-	return cidSet, nil
+	logger.Printf("Found %d files in Web3.Storage\n", len(existingContent))
+
+	return existingContent, nil
 }
