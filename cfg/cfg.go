@@ -13,6 +13,7 @@ var (
 	ErrMissingPinParams          = errors.New("to upload to a pinning service, you must provide both the endpoint URL and your secret token")
 	ErrOverloadedPinningServices = errors.New("you cannot upload to both Web3.Storage and a pinning service at the same time")
 	ErrInvalidOutput             = errors.New("this is not a valid output type; check the README")
+	ErrInvalidMode               = errors.New("this is not a valid mode; check the README")
 )
 
 type OperatingMode string
@@ -22,6 +23,12 @@ const (
 	ModeHistory  OperatingMode = "history"
 	ModeUpload   OperatingMode = "upload"
 )
+
+var allModes = map[OperatingMode]struct{}{
+	ModeValidate: {},
+	ModeHistory:  {},
+	ModeUpload:   {},
+}
 
 type OutputType string
 
@@ -142,6 +149,14 @@ func Destination() UploadDestination {
 }
 
 func ValidateParams() error {
+	if _, isValid := allOutputs[Output()]; !isValid {
+		return ErrInvalidOutput
+	}
+
+	if _, isValid := allModes[Mode()]; !isValid {
+		return ErrInvalidMode
+	}
+
 	isIpfsAPI := viper.IsSet("ipfs-api")
 	isW3sToken := viper.IsSet("w3s-token")
 	isPinEndpoint := viper.IsSet("pin-endpoint")
@@ -160,10 +175,6 @@ func ValidateParams() error {
 		}
 	} else if isIpfsAPI || isW3sToken || isPinEndpoint || isPinToken {
 		return ErrNotUploadMode
-	}
-
-	if _, isValid := allOutputs[Output()]; !isValid {
-		return ErrInvalidOutput
 	}
 
 	return nil
