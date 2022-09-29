@@ -80,6 +80,10 @@ func init() {
 		panic(err)
 	}
 
+	if err := viper.BindEnv("w3s-pin", "INPUT_W3S-PIN"); err != nil {
+		panic(err)
+	}
+
 	if err := viper.BindEnv("ipfs-api", "INPUT_IPFS-API"); err != nil {
 		panic(err)
 	}
