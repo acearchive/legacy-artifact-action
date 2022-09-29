@@ -137,11 +137,11 @@ func DryRun() bool {
 }
 
 func Destination() UploadDestination {
-	if viper.IsSet("w3s-token") {
+	if viper.GetString("w3s-token") != "" {
 		return UploadW3S
 	}
 
-	if viper.IsSet("pin-endpoint") && viper.IsSet("pin-token") {
+	if viper.GetString("pin-endpoint") != "" && viper.GetString("pin-token") != "" {
 		return UploadPin
 	}
 
@@ -157,10 +157,10 @@ func ValidateParams() error {
 		return ErrInvalidMode
 	}
 
-	isIpfsAPI := viper.IsSet("ipfs-api")
-	isW3sToken := viper.IsSet("w3s-token")
-	isPinEndpoint := viper.IsSet("pin-endpoint")
-	isPinToken := viper.IsSet("pin-token")
+	isIpfsAPI := viper.GetString("ipfs-api") != ""
+	isW3sToken := viper.GetString("w3s-token") != ""
+	isPinEndpoint := viper.GetString("pin-endpoint") != ""
+	isPinToken := viper.GetString("pin-token") != ""
 
 	if Mode() == ModeUpload {
 		switch {
