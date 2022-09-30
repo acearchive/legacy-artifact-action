@@ -8,7 +8,6 @@ import (
 
 	"github.com/acearchive/artifact-action/cfg"
 	"github.com/acearchive/artifact-action/parse"
-	"github.com/ipfs/go-cid"
 )
 
 const prettyJSONIndent = "  "
@@ -71,7 +70,7 @@ func marshalArtifact(output Output, pretty bool) (string, error) {
 	return string(marshalledOutput), nil
 }
 
-func marshalCid(cids []cid.Cid, pretty bool) (string, error) {
+func marshalCid(cids parse.DeduplicatedCIDList, pretty bool) (string, error) {
 	var (
 		marshalledOutput []byte
 		err              error
@@ -96,7 +95,7 @@ func marshalCid(cids []cid.Cid, pretty bool) (string, error) {
 	return string(marshalledOutput), nil
 }
 
-func Print(output Output, cidList []cid.Cid) error {
+func Print(output Output, fileCids parse.DeduplicatedCIDList) error {
 	if cfg.Action() {
 		artifactOutput, err := marshalArtifact(output, false)
 		if err != nil {
@@ -105,7 +104,7 @@ func Print(output Output, cidList []cid.Cid) error {
 
 		fmt.Printf("::set-output name=artifacts::%s\n", artifactOutput) //nolint:forbidigo
 
-		cidOutput, err := marshalCid(cidList, false)
+		cidOutput, err := marshalCid(fileCids, false)
 		if err != nil {
 			return err
 		}
@@ -128,7 +127,7 @@ func Print(output Output, cidList []cid.Cid) error {
 
 		fmt.Println(artifactOutput) //nolint:forbidigo
 	case cfg.OutputCids:
-		cidOutput, err := marshalCid(cidList, true)
+		cidOutput, err := marshalCid(fileCids, true)
 		if err != nil {
 			return err
 		}

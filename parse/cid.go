@@ -33,7 +33,9 @@ func (a Artifact) listCids() []cid.Cid {
 	return cidList
 }
 
-func ExtractCids(artifacts []Artifact) ([]cid.Cid, error) {
+type DeduplicatedCIDList []cid.Cid
+
+func ExtractCids(artifacts []Artifact) (DeduplicatedCIDList, error) {
 	cidList := make([]cid.Cid, 0, len(artifacts))
 	contentSet := make(map[ContentKey]struct{}, len(artifacts))
 

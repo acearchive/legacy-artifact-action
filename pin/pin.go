@@ -2,58 +2,193 @@ package pin
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/acearchive/artifact-action/cfg"
 	"github.com/acearchive/artifact-action/logger"
 	"github.com/acearchive/artifact-action/parse"
 	"github.com/ipfs/go-cid"
-	pinning "github.com/ipfs/go-pinning-service-http-client"
 )
 
-// We add a metadata entry to the pin for the root directory. This enables us
-// to programmatically unpin old roots. While theoretically old roots should be
-// deduplicated and take up no additional space, many IPFS pinning services do
-// not deduplicate data like this, at least when it comes to calculating your
-// usage towards your quota.
-const rootMetaKey = "lgbt.acearchive.artifact-action.root"
+// This package deliberately does not use the reference implementation of the
+// IPFS pinning services client because it does not encode metadata properly in
+// the request parameters, and this tool relies on the metadata functionality
+// to work around the broken paging implementation. See the issue below for
+// details:
+//
+// https://github.com/ipfs/go-pinning-service-http-client/issues/8
 
-// We add a metadata entry to the pins for files from artifacts. This enables
-// us to determine which pins in a pinning service were created by this tool,
-// so that when we list existing pins to determine which CIDs have already been
-// pinned, we can skips ones not created by this tool.
-const fileMetaKey = "lgbt.acearchive.artifact-action.file"
+var getPinClient func() *http.Client = func() func() *http.Client {
+	client := &http.Client{}
 
-const boolMetaValue = "true"
+	return func() *http.Client {
+		return client
+	}
+}()
 
-func rootMeta() map[string]string {
-	return map[string]string{rootMetaKey: boolMetaValue}
-}
+// This is deliberately larger than necessary in order to mitigate problems
+// associated with paging. See `listExistingPins`.
+const pageLimit = "200"
 
-func fileMeta() map[string]string {
-	return map[string]string{fileMetaKey: boolMetaValue}
-}
+// This can not be > 10 per the API spec.
+const batchLimit = 10
 
-const pageLimit = 50
+const headerAuthorization = "Authorization"
 
-func listPins(ctx context.Context, client *pinning.Client) (parse.ContentSet, error) {
-	existingPins, errChan := client.Ls(
-		ctx,
-		pinning.PinOpts.FilterStatus(
-			pinning.StatusPinned,
-			pinning.StatusPinning,
-			pinning.StatusQueued,
-		),
-		pinning.PinOpts.LsMeta(fileMeta()),
-	)
+type metaMap map[string]interface{}
 
-	existingContent := make(parse.ContentSet)
-
-	for pinStatus := range existingPins {
-		existingContent[parse.ContentKeyFromCid(pinStatus.GetPin().GetCid())] = struct{}{}
+func (m metaMap) Encode() (string, error) {
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		return "", err
 	}
 
-	if err := <-errChan; err != nil {
-		return nil, err
+	return string(bytes), nil
+}
+
+const baseMetaKey = "lgbt.acearchive.artifact-action"
+const kindMetaKey = "lgbt.acearchive.artifact-action.kind"
+
+func rootMeta() metaMap {
+	return map[string]interface{}{baseMetaKey: true, kindMetaKey: "root"}
+}
+
+func fileMeta() metaMap {
+	return map[string]interface{}{baseMetaKey: true, kindMetaKey: "file"}
+}
+
+func addAuthHeader(request *http.Request, token string) {
+	request.Header.Add(headerAuthorization, fmt.Sprintf("Bearer %s", token))
+}
+
+func joinUrlPath(base url.URL, elements ...string) url.URL {
+	var newPath strings.Builder
+
+	newPath.WriteString(strings.TrimRight(base.Path, "/"))
+
+	for _, elem := range elements {
+		newPath.WriteRune('/')
+		newPath.WriteString(elem)
+	}
+
+	base.Path = newPath.String()
+
+	return base
+}
+
+func setQueryParams(base *url.URL, params map[string]string) {
+	query := base.Query()
+
+	for key, value := range params {
+		query.Set(key, value)
+	}
+
+	base.RawQuery = query.Encode()
+}
+
+type pinResponse struct {
+	Cid string `json:"cid"`
+}
+
+type pinStatusResponse struct {
+	Pin pinResponse `json:"pin"`
+}
+
+type listPinsResponse struct {
+	Results []pinStatusResponse `json:"results"`
+}
+
+// listExistingPins returns the subset of the CIDs that have already been
+// pinned to the remote by this tool.
+//
+// The way that we have to go about this is wonky. As of time of writing,
+// paging is fundamentally broken in the pinning services API, both in terms of
+// the spec and in terms of common implementations. See this issue for details:
+// https://github.com/ipfs/kubo/issues/8762
+//
+// Instead of using paging, we batch together a few CIDs and ask the service to
+// list pins with any of those CIDs. If one of the pins has that CID, then the
+// CID is already pinned. However, multiple pins can have the same CID, and
+// since we can't use paging, they all have to fit in one page.
+//
+// To address this problem, we tag pins which were created by this tool with
+// metadata, and we tell the service to only return pins with metadata
+// indicating they were made by this tool. Since this tool avoids re-pinning
+// files that have already been pinned, *theoretically* there should only ever
+// be one pin per CID given the filter parameters.
+//
+// However, there's all sorts of ways this could break, such as race conditions
+// if two instances of this tool are pinning to the same service with the same
+// credentials at the same time. We can mitigate this somewhat by using a
+// larger-than-necessary page size, but ultimately this solution will have to
+// be best-effort until paging is un-borked.
+func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileCids parse.DeduplicatedCIDList) (parse.ContentSet, error) {
+	existingContent := make(parse.ContentSet)
+	currentIndex := 0
+
+	pinClient := getPinClient()
+
+	for {
+		cidBatch := make([]string, 0, batchLimit)
+
+		for _, fileCid := range fileCids[currentIndex:] {
+			currentIndex++
+			cidBatch = append(cidBatch, fileCid.String())
+
+			if len(cidBatch) == batchLimit {
+				break
+			}
+		}
+
+		metaParam, err := fileMeta().Encode()
+		if err != nil {
+			return nil, err
+		}
+
+		requestUrl := joinUrlPath(endpoint, "pins")
+		setQueryParams(&requestUrl, map[string]string{
+			"cid":    strings.Join(cidBatch, ","),
+			"status": "queued,pinning,pinned",
+			"limit":  pageLimit,
+			"meta":   metaParam,
+		})
+
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestUrl.String(), http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+
+		addAuthHeader(request, token)
+
+		response, err := pinClient.Do(request)
+		if err != nil {
+			return nil, err
+		}
+
+		var responseObj listPinsResponse
+
+		if err := json.NewDecoder(response.Body).Decode(&responseObj); err != nil {
+			return nil, err
+		}
+
+		response.Body.Close()
+
+		for _, pinStatus := range responseObj.Results {
+			resultCid, err := cid.Parse(pinStatus.Pin.Cid)
+			if err != nil {
+				return nil, err
+			}
+
+			existingContent[parse.ContentKeyFromCid(resultCid)] = struct{}{}
+		}
+
+		if len(cidBatch) < batchLimit {
+			break
+		}
 	}
 
 	logger.Printf("Found %d pins\n", len(existingContent))
@@ -61,7 +196,38 @@ func listPins(ctx context.Context, client *pinning.Client) (parse.ContentSet, er
 	return existingContent, nil
 }
 
-func pinDeduplicated(ctx context.Context, client *pinning.Client, fileCids []cid.Cid, rootCid cid.Cid, alreadyPinned parse.ContentSet) error {
+func addPin(ctx context.Context, endpoint url.URL, token string, pinCid cid.Cid, meta metaMap) error {
+	if cfg.DryRun() {
+		return nil
+	}
+
+	metaParam, err := fileMeta().Encode()
+	if err != nil {
+		return err
+	}
+
+	requestUrl := joinUrlPath(endpoint, "pins")
+	setQueryParams(&requestUrl, map[string]string{
+		"cid":  pinCid.String(),
+		"meta": metaParam,
+	})
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, requestUrl.String(), http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	addAuthHeader(request, token)
+
+	response, err := getPinClient().Do(request)
+	if err != nil {
+		return err
+	}
+
+	return response.Body.Close()
+}
+
+func pinDeduplicated(ctx context.Context, endpoint url.URL, token string, fileCids parse.DeduplicatedCIDList, rootCid cid.Cid, alreadyPinned parse.ContentSet) error {
 
 	filesToUpload := make([]cid.Cid, 0, len(fileCids))
 
@@ -77,31 +243,34 @@ func pinDeduplicated(ctx context.Context, client *pinning.Client, fileCids []cid
 	for currentIndex, currentCid := range filesToUpload {
 		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 
-		if !cfg.DryRun() {
-			if _, err := client.Add(ctx, currentCid, pinning.PinOpts.AddMeta(fileMeta())); err != nil {
-				return err
-			}
+		if err := addPin(ctx, endpoint, token, currentCid, fileMeta()); err != nil {
+			return err
 		}
 	}
 
 	logger.Printf("\nPinning the root directory: /ipfs/%s\n", rootCid.String())
 
-	if !cfg.DryRun() {
-		if _, err := client.Add(ctx, rootCid, pinning.PinOpts.AddMeta(rootMeta())); err != nil {
-			return err
-		}
+	if err := addPin(ctx, endpoint, token, rootCid, rootMeta()); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func Pin(ctx context.Context, endpoint, token string, fileCids []cid.Cid, rootCid cid.Cid) error {
-	client := pinning.NewClient(endpoint, token)
-
-	existingContent, err := listPins(ctx, client)
+func Pin(ctx context.Context, endpoint, token string, fileCids parse.DeduplicatedCIDList, rootCid cid.Cid) error {
+	endpointUrl, err := url.Parse(endpoint)
 	if err != nil {
 		return err
 	}
 
-	return pinDeduplicated(ctx, client, fileCids, rootCid, existingContent)
+	if len(endpointUrl.Scheme) == 0 {
+		endpointUrl.Scheme = "https"
+	}
+
+	existingContent, err := listExistingPins(ctx, *endpointUrl, token, fileCids)
+	if err != nil {
+		return err
+	}
+
+	return pinDeduplicated(ctx, *endpointUrl, token, fileCids, rootCid, existingContent)
 }
