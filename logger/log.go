@@ -7,13 +7,13 @@ import (
 	"github.com/acearchive/artifact-action/cfg"
 )
 
-func Printf(format string, a ...interface{}) {
+func Printf(format string, a ...any) {
 	if cfg.Action() || cfg.Output() == cfg.OutputSummary {
 		fmt.Printf(format, a...) //nolint:forbidigo
 	}
 }
 
-func Println(a ...interface{}) {
+func Println(a ...any) {
 	if cfg.Action() || cfg.Output() == cfg.OutputSummary {
 		fmt.Println(a...) //nolint:forbidigo
 	}

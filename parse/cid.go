@@ -36,14 +36,13 @@ func (a Artifact) listCids() []cid.Cid {
 type DeduplicatedCIDList []cid.Cid
 
 func ExtractCids(artifacts []Artifact) (DeduplicatedCIDList, error) {
-	cidList := make([]cid.Cid, 0, len(artifacts))
-	contentSet := make(map[ContentKey]struct{}, len(artifacts))
+	cidList := make(DeduplicatedCIDList, 0, len(artifacts))
+	contentSet := NewContentSet(len(artifacts))
 
 	for _, artifact := range artifacts {
 		for _, currentCid := range artifact.listCids() {
-			if _, alreadyExists := contentSet[ContentKeyFromCid(currentCid)]; !alreadyExists {
-				contentSet[ContentKeyFromCid(currentCid)] = struct{}{}
-
+			if !contentSet.Contains(currentCid) {
+				contentSet.Insert(currentCid)
 				cidList = append(cidList, currentCid)
 			}
 		}

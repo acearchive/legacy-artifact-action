@@ -42,7 +42,7 @@ func initializeNilSlicesOfValue(value reflect.Value) {
 	}
 }
 
-func initializeNilSlices(value interface{}) {
+func initializeNilSlices(value any) {
 	initializeNilSlicesOfValue(reflect.ValueOf(value).Elem())
 }
 

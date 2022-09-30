@@ -1,340 +1,173 @@
 package pin
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"net/url"
-	"strings"
+	"time"
 
 	"github.com/acearchive/artifact-action/cfg"
 	"github.com/acearchive/artifact-action/logger"
 	"github.com/acearchive/artifact-action/parse"
 	"github.com/acearchive/artifact-action/pin/names"
 	"github.com/ipfs/go-cid"
+	pinning "github.com/ipfs/go-pinning-service-http-client"
 )
 
-// This package deliberately does not use the reference implementation of the
-// IPFS pinning services client because it does not encode metadata properly in
-// the request parameters, and this tool relies on the metadata functionality
-// to work around the broken paging implementation. See the issue below for
-// details:
-//
-// https://github.com/ipfs/go-pinning-service-http-client/issues/8
-
-var getPinClient func() *http.Client = func() func() *http.Client {
-	client := &http.Client{}
-
-	return func() *http.Client {
-		return client
-	}
-}()
-
 // This is deliberately larger than necessary in order to mitigate problems
-// associated with paging. See `listExistingPins`.
-const pageLimit = "200"
+// associated with paging. See `filterAlreadyPinned`.
+const pageLimit = 100
 
 // This can not be > 10 per the API spec.
 const batchLimit = 10
 
-const (
-	headerAuthorization = "Authorization"
-	headerContentType   = "Content-Type"
-)
-
-type metaMap map[string]string
-
-func (m metaMap) Encode() (string, error) {
-	bytes, err := json.Marshal(m)
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+// These are the statuses we filter on when checking if a CID is already pinned
+// by the service.
+func filterExistingPinStatus() pinning.LsOption {
+	return pinning.PinOpts.FilterStatus(
+		pinning.StatusQueued,
+		pinning.StatusPinning,
+		pinning.StatusPinned,
+	)
 }
 
-func addAuthHeader(request *http.Request, token string) {
-	request.Header.Add(headerAuthorization, fmt.Sprintf("Bearer %s", token))
+func oneshotChan[E any](c chan E) <-chan bool {
+	outChan := make(chan bool, 1)
+
+	go func() {
+		_, isOpen := <-c
+		outChan <- isOpen
+		close(outChan)
+	}()
+
+	return outChan
 }
 
-func joinUrlPath(base url.URL, elements ...string) url.URL {
-	var newPath strings.Builder
+type NotPinnedCIDList []cid.Cid
 
-	newPath.WriteString(strings.TrimRight(base.Path, "/"))
-
-	for _, elem := range elements {
-		newPath.WriteRune('/')
-		newPath.WriteString(elem)
-	}
-
-	base.Path = newPath.String()
-
-	return base
-}
-
-func setQueryParams(base *url.URL, params map[string]string) {
-	query := base.Query()
-
-	for key, value := range params {
-		query.Set(key, value)
-	}
-
-	base.RawQuery = query.Encode()
-}
-
-type apiError struct {
-	Method  string
-	URL     *url.URL
-	Status  string
-	Reason  string
-	Details *string
-}
-
-func (e apiError) Error() string {
-	description := e.Reason
-
-	if e.Details != nil {
-		description += fmt.Sprintf("\n%s", *e.Details)
-	}
-
-	return fmt.Sprintf("Returned %s\n%s %s\n\n%s\n", e.Status, e.Method, e.URL.String(), description)
-}
-
-func checkResponseError(response *http.Response, goodStatusCodes ...int) error {
-	for _, statusCode := range goodStatusCodes {
-		if response.StatusCode == statusCode {
-			return nil
-		}
-	}
-
-	var responseObj errorResponse
-
-	if err := json.NewDecoder(response.Body).Decode(&responseObj); err != nil {
-		return apiError{
-			Method: response.Request.Method,
-			URL:    response.Request.URL,
-			Status: response.Status,
-			Reason: err.Error(),
-		}
-	}
-
-	response.Body.Close()
-
-	return apiError{
-		Method:  response.Request.Method,
-		URL:     response.Request.URL,
-		Status:  response.Status,
-		Reason:  responseObj.Error.Reason,
-		Details: responseObj.Error.Details,
-	}
-}
-
-type pinResponse struct {
-	Cid string `json:"cid"`
-}
-
-type pinStatusResponse struct {
-	Pin pinResponse `json:"pin"`
-}
-
-type listPinsResponse struct {
-	Results []pinStatusResponse `json:"results"`
-}
-
-type errorReasonResponse struct {
-	Reason  string  `json:"reason"`
-	Details *string `json:"details"`
-}
-
-type errorResponse struct {
-	Error errorReasonResponse `json:"error"`
-}
-
-// listExistingPins returns the subset of the CIDs that have already been
-// pinned to the remote by this tool.
+// filterAlreadyPinned returns the subset of the given CIDs have not already been
+// pinned and need to be pinned.
 //
 // The way that we have to go about this is wonky. As of time of writing,
-// paging is fundamentally broken in the pinning services API, both in terms of
-// the spec and in terms of common implementations. See this issue for details:
+// pagination is fundamentally broken in the pinning services API, both in
+// terms of the spec and in terms of common implementations. See this issue for
+// details:
 //
 // https://github.com/ipfs/kubo/issues/8762
 //
-// Instead of using paging, we batch together a few CIDs and ask the service to
-// list pins with any of those CIDs. If one of the pins has that CID, then the
-// CID is already pinned. However, multiple pins can have the same CID, and
-// since we can't use paging, they all have to fit in one page.
-//
-// To address this problem, we use pin names to flag which of these pins were
-// created by this tool, and we tell the service to only return pins with
-// matching names. Since this tool avoids re-pinning files that have already
-// been pinned, *theoretically* there should only ever be one pin per CID given
-// the filter parameters.
-//
-// However, there's all sorts of ways this could break, such as race conditions
-// if two instances of this tool are pinning to the same service with the same
-// credentials at the same time. We can mitigate this somewhat by using a
-// larger-than-necessary page size, but ultimately this solution will have to
-// be best-effort until paging is un-borked.
-func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileCids parse.DeduplicatedCIDList) (parse.ContentSet, error) {
-	existingContent := make(parse.ContentSet)
-	currentIndex := 0
+// We can work around the problem by trying our best to get as many CIDs from
+// the remote via pagination as we can, and then from there we can individually
+// check any that slipped through.
+func filterAlreadyPinned(ctx context.Context, client *pinning.Client, fileCids parse.DeduplicatedCIDList) (NotPinnedCIDList, error) {
+	pinnedContent := parse.NewContentSet(len(fileCids))
 
-	pinClient := getPinClient()
-
+	// Attempt to page over as many pins as possible.
 	for {
-		cidBatch := make([]string, 0, batchLimit)
+		// Technically a new pin could be created between "now" and when this
+		// request actually hits the server, but that's not much of a problem
+		// since attempting to use pagination at all is just a performance
+		// optimization over checking each CID individually.
+		cursor := time.Now().UTC()
 
-		for _, fileCid := range fileCids[currentIndex:] {
-			currentIndex++
-			cidBatch = append(cidBatch, fileCid.String())
-
-			if len(cidBatch) == batchLimit {
-				break
-			}
-		}
-
-		requestUrl := joinUrlPath(endpoint, "pins")
-		setQueryParams(&requestUrl, map[string]string{
-			"cid":    strings.Join(cidBatch, ","),
-			"status": "queued,pinning,pinned",
-			"limit":  pageLimit,
-			"name":   names.FilesPrefix,
-			"match":  "partial",
-		})
-
-		request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestUrl.String(), http.NoBody)
+		pins, count, err := client.LsBatchSync(
+			ctx,
+			filterExistingPinStatus(),
+			pinning.PinOpts.Limit(pageLimit),
+			pinning.PinOpts.FilterBefore(cursor),
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		addAuthHeader(request, token)
-
-		response, err := pinClient.Do(request)
-		if err != nil {
-			return nil, err
+		// These iterate from latest to oldest.
+		for _, pinStatus := range pins {
+			pinnedContent.Insert(pinStatus.GetPin().GetCid())
+			cursor = pinStatus.GetCreated().UTC()
 		}
 
-		if response.StatusCode == http.StatusNotFound {
-			return existingContent, nil
-		}
-
-		if err := checkResponseError(response, http.StatusOK); err != nil {
-			return nil, err
-		}
-
-		var responseObj listPinsResponse
-
-		if err := json.NewDecoder(response.Body).Decode(&responseObj); err != nil {
-			return nil, err
-		}
-
-		response.Body.Close()
-
-		for _, pinStatus := range responseObj.Results {
-			resultCid, err := cid.Parse(pinStatus.Pin.Cid)
-			if err != nil {
-				return nil, err
-			}
-
-			existingContent[parse.ContentKeyFromCid(resultCid)] = struct{}{}
-		}
-
-		if len(cidBatch) < batchLimit {
+		if count <= len(pins) {
 			break
 		}
 	}
 
-	logger.Printf("Found %d pins\n", len(existingContent))
+	// The CIDs of files in the repository which are not already pinned as far
+	// as we can tell based on the CIDs we got via paging. We're going to
+	// double-check each of these individually in case they were missed due to
+	// pagination bugs.
+	cidsToRecheck := pinnedContent.Difference(fileCids)
 
-	return existingContent, nil
-}
+	cidsToPin := make([]cid.Cid, 0, len(cidsToRecheck))
 
-type addPinRequest struct {
-	Cid  string `json:"cid"`
-	Name string `json:"name"`
-}
+	for _, currentCid := range cidsToRecheck {
+		// Check if this CID is already pinned. We also filter on the name
+		// because the naming scheme namespaces these CIDs as files in
+		// artifacts which were pinned by this tool. If other tools/services
+		// are also pinning to this remote, then we don't want to step on each
+		// others' toes. We can't assume that a CID is pinned forever if
+		// another service may decide to unpin it later.
+		pins, errChan := client.Ls(
+			ctx,
+			filterExistingPinStatus(),
+			pinning.PinOpts.FilterCIDs(currentCid),
+			pinning.PinOpts.FilterName(names.New(currentCid, names.FileKind)),
+			pinning.PinOpts.Limit(1), // It's possible to have multiple pins for the same CID.
+		)
 
-func (r addPinRequest) Encode() ([]byte, error) {
-	return json.Marshal(r)
-}
-
-func addPin(ctx context.Context, endpoint url.URL, token string, pinCid cid.Cid, name string) error {
-	if cfg.DryRun() {
-		return nil
-	}
-
-	requestUrl := joinUrlPath(endpoint, "pins")
-	body, err := addPinRequest{Cid: pinCid.String(), Name: name}.Encode()
-	if err != nil {
-		return err
-	}
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, requestUrl.String(), bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-
-	addAuthHeader(request, token)
-	request.Header.Add(headerContentType, "application/json")
-
-	response, err := getPinClient().Do(request)
-	if err != nil {
-		return err
-	}
-
-	if err := checkResponseError(response, http.StatusAccepted); err != nil {
-		return err
-	}
-
-	return response.Body.Close()
-}
-
-func pinDeduplicated(ctx context.Context, endpoint url.URL, token string, fileCids parse.DeduplicatedCIDList, rootCid cid.Cid, alreadyPinned parse.ContentSet) error {
-
-	filesToUpload := make([]cid.Cid, 0, len(fileCids))
-
-	for _, id := range fileCids {
-		if _, alreadyUploaded := alreadyPinned[parse.ContentKeyFromCid(id)]; !alreadyUploaded {
-			filesToUpload = append(filesToUpload, id)
+		for {
+			select {
+			// Don't try to receive more than one element from the channel. We
+			// just need to know if there is *a* pin with this CID.
+			case _, cidIsPinned := <-oneshotChan(pins):
+				if !cidIsPinned {
+					cidsToPin = append(cidsToPin, currentCid)
+				}
+			case err := <-errChan:
+				if err == nil {
+					break
+				} else {
+					return nil, err
+				}
+			}
 		}
 	}
 
-	logger.Printf("Skipping %d files that are already pinned\n", len(fileCids)-len(filesToUpload))
-	logger.Printf("Pinning %d files\n", len(filesToUpload))
+	numAlreadyPinned := len(fileCids) - len(cidsToPin)
+	logger.Printf("Skipping %d files that are already pinned\n", numAlreadyPinned)
 
-	for currentIndex, currentCid := range filesToUpload {
-		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
+	return cidsToPin, nil
+}
 
-		if err := addPin(ctx, endpoint, token, currentCid, names.ForFile(currentCid)); err != nil {
+func pinCid(ctx context.Context, client *pinning.Client, cidToPin cid.Cid, kind names.Kind) error {
+	if !cfg.DryRun() {
+		if _, err := client.Add(ctx, cidToPin, pinning.PinOpts.WithName(names.New(cidToPin, kind))); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func pinFiles(ctx context.Context, client *pinning.Client, cidsToPin NotPinnedCIDList, rootCid cid.Cid) error {
+	logger.Printf("Pinning %d files\n", len(cidsToPin))
+
+	for currentIndex, currentCid := range cidsToPin {
+		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(cidsToPin), currentCid.String())
+
+		if err := pinCid(ctx, client, currentCid, names.FileKind); err != nil {
 			return err
 		}
 	}
 
 	logger.Printf("\nPinning the root directory: /ipfs/%s\n", rootCid.String())
 
-	if err := addPin(ctx, endpoint, token, rootCid, names.ForRoot(rootCid)); err != nil {
-		return err
-	}
-
-	return nil
+	return pinCid(ctx, client, rootCid, names.RootKind)
 }
 
 func Pin(ctx context.Context, endpoint, token string, fileCids parse.DeduplicatedCIDList, rootCid cid.Cid) error {
-	endpointUrl, err := url.Parse(endpoint)
+	client := pinning.NewClient(endpoint, token)
+
+	cidsToPin, err := filterAlreadyPinned(ctx, client, fileCids)
 	if err != nil {
 		return err
 	}
 
-	if len(endpointUrl.Scheme) == 0 {
-		endpointUrl.Scheme = "https"
-	}
-
-	existingContent, err := listExistingPins(ctx, *endpointUrl, token, fileCids)
-	if err != nil {
-		return err
-	}
-
-	return pinDeduplicated(ctx, *endpointUrl, token, fileCids, rootCid, existingContent)
+	return pinFiles(ctx, client, cidsToPin, rootCid)
 }

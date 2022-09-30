@@ -127,17 +127,17 @@ func (e ArtifactEntry) ToGeneric() GenericEntry {
 	return entry.Sanitize()
 }
 
-// Sanitize replaces `map[interface{}]interface{}` values that cannot be
-// serialized to JSON with `map[string]interface{}`.
+// Sanitize replaces `map[any]any` values that cannot be serialized to JSON
+// with `map[string]any`.
 func (e GenericEntry) Sanitize() GenericEntry {
-	if generic, ok := dyno.ConvertMapI2MapS(map[string]interface{}(e)).(map[string]interface{}); ok {
+	if generic, ok := dyno.ConvertMapI2MapS(map[string]any(e)).(map[string]any); ok {
 		return generic
 	}
 
 	panic("failed type assertion, this is a bug")
 }
 
-func (e GenericEntry) ToTyped(value interface{}) {
+func (e GenericEntry) ToTyped(value any) {
 	rawJSON, err := json.Marshal(e)
 	if err != nil {
 		logger.LogError(fmt.Errorf("%w\n%#v", err, e))

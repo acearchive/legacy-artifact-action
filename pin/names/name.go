@@ -6,21 +6,23 @@ import (
 	"github.com/ipfs/go-cid"
 )
 
-const (
-	filesName = "files"
-	rootsName = "roots"
-	prefix    = "lgbt.acearchive.artifact-action"
-)
+const Namespace = "lgbt.acearchive.artifact-action"
+
+type Kind string
 
 const (
-	FilesPrefix = prefix + "/" + filesName
-	RootsPrefix = prefix + "/" + rootsName
+	// FileKind is the CID of a file in an artifact.
+	FileKind = "files"
+
+	// RootKind is the CID of the root directory containing every file in every
+	// artifact.
+	RootKind = "roots"
 )
 
 func newPinName(pinCid cid.Cid, parents ...string) string {
 	var name strings.Builder
 
-	name.WriteString(prefix)
+	name.WriteString(Namespace)
 
 	for _, segment := range parents {
 		name.WriteRune('/')
@@ -33,10 +35,6 @@ func newPinName(pinCid cid.Cid, parents ...string) string {
 	return name.String()
 }
 
-func ForFile(pinCid cid.Cid) string {
-	return newPinName(pinCid, filesName)
-}
-
-func ForRoot(pinCid cid.Cid) string {
-	return newPinName(pinCid, rootsName)
+func New(pinCid cid.Cid, kind Kind) string {
+	return newPinName(pinCid, string(kind))
 }

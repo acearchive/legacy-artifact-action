@@ -8,7 +8,7 @@ const CurrentArtifactVersion = 3
 
 const ArtifactFileExtension = ".md"
 
-type GenericEntry map[string]interface{}
+type GenericEntry map[string]any
 
 type Artifact struct {
 	Path   string          `json:"path"`
