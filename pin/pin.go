@@ -15,18 +15,36 @@ import (
 // deduplicated and take up no additional space, many IPFS pinning services do
 // not deduplicate data like this, at least when it comes to calculating your
 // usage towards your quota.
-//
-// This metadata key is intended to be globally unique so that you can query
-// for all the roots in a pinning service, even if you share it with other
-// services.
 const rootMetaKey = "lgbt.acearchive.artifact-action.root"
 
+// We add a metadata entry to the pins for files from artifacts. This enables
+// us to determine which pins in a pinning service were created by this tool,
+// so that when we list existing pins to determine which CIDs have already been
+// pinned, we can skips ones not created by this tool.
+const fileMetaKey = "lgbt.acearchive.artifact-action.file"
+
+const boolMetaValue = "true"
+
 func rootMeta() map[string]string {
-	return map[string]string{rootMetaKey: "true"}
+	return map[string]string{rootMetaKey: boolMetaValue}
 }
 
+func fileMeta() map[string]string {
+	return map[string]string{fileMetaKey: boolMetaValue}
+}
+
+const pageLimit = 50
+
 func listPins(ctx context.Context, client *pinning.Client) (parse.ContentSet, error) {
-	existingPins, errChan := client.Ls(ctx, pinning.PinOpts.FilterStatus(pinning.StatusPinned))
+	existingPins, errChan := client.Ls(
+		ctx,
+		pinning.PinOpts.FilterStatus(
+			pinning.StatusPinned,
+			pinning.StatusPinning,
+			pinning.StatusQueued,
+		),
+		pinning.PinOpts.LsMeta(fileMeta()),
+	)
 
 	existingContent := make(parse.ContentSet)
 
@@ -60,7 +78,7 @@ func pinDeduplicated(ctx context.Context, client *pinning.Client, fileCids []cid
 		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 
 		if !cfg.DryRun() {
-			if _, err := client.Add(ctx, currentCid); err != nil {
+			if _, err := client.Add(ctx, currentCid, pinning.PinOpts.AddMeta(fileMeta())); err != nil {
 				return err
 			}
 		}
