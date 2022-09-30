@@ -2,6 +2,7 @@ package pin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/acearchive/artifact-action/cfg"
@@ -15,9 +16,6 @@ import (
 // This is deliberately larger than necessary in order to mitigate problems
 // associated with paging. See `filterAlreadyPinned`.
 const pageLimit = 100
-
-// This can not be > 10 per the API spec.
-const batchLimit = 10
 
 // These are the statuses we filter on when checking if a CID is already pinned
 // by the service.
@@ -43,6 +41,11 @@ func oneshotChan[E any](c chan E) <-chan bool {
 
 type NotPinnedCIDList []cid.Cid
 
+type pinInfo struct {
+	Cid     cid.Cid
+	Created time.Time
+}
+
 // filterAlreadyPinned returns the subset of the given CIDs have not already been
 // pinned and need to be pinned.
 //
@@ -59,34 +62,42 @@ type NotPinnedCIDList []cid.Cid
 func filterAlreadyPinned(ctx context.Context, client *pinning.Client, fileCids parse.DeduplicatedCIDList) (NotPinnedCIDList, error) {
 	pinnedContent := parse.NewContentSet(len(fileCids))
 
+	// Technically a new pin could be created between "now" and when this
+	// request actually hits the server, but that's not much of a problem since
+	// pagination is broken and we're probably not going to catch all the CIDs
+	// by paging anyways.
+	cursor := time.Now().UTC()
+
 	// Attempt to page over as many pins as possible.
 	for {
-		// Technically a new pin could be created between "now" and when this
-		// request actually hits the server, but that's not much of a problem
-		// since attempting to use pagination at all is just a performance
-		// optimization over checking each CID individually.
-		cursor := time.Now().UTC()
-
-		pins, count, err := client.LsBatchSync(
+		pins, err := client.LsSync(
 			ctx,
-			filterExistingPinStatus(),
+			pinning.PinOpts.FilterStatus(pinning.StatusPinned),
 			pinning.PinOpts.Limit(pageLimit),
-			pinning.PinOpts.FilterBefore(cursor),
+			// pinning.PinOpts.FilterBefore(cursor),
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		// These iterate from latest to oldest.
+		nextCursor := cursor
+
+		fmt.Printf("pins = %d\n", len(pins))
 		for _, pinStatus := range pins {
 			pinnedContent.Insert(pinStatus.GetPin().GetCid())
-			cursor = pinStatus.GetCreated().UTC()
+			nextCursor = pinStatus.GetCreated()
 		}
 
-		if count <= len(pins) {
+		nextCursor = nextCursor.UTC()
+
+		if !nextCursor.Before(cursor) {
 			break
 		}
+
+		cursor = nextCursor
 	}
+
+	fmt.Printf("len(pinnedContent) = %d\n", len(pinnedContent))
 
 	// The CIDs of files in the repository which are not already pinned as far
 	// as we can tell based on the CIDs we got via paging. We're going to
@@ -94,7 +105,9 @@ func filterAlreadyPinned(ctx context.Context, client *pinning.Client, fileCids p
 	// pagination bugs.
 	cidsToRecheck := pinnedContent.Difference(fileCids)
 
-	cidsToPin := make([]cid.Cid, 0, len(cidsToRecheck))
+	fmt.Printf("len(cidsToRecheck) = %d\n", len(cidsToRecheck))
+
+	cidsToPin := make(NotPinnedCIDList, 0, len(cidsToRecheck))
 
 	for _, currentCid := range cidsToRecheck {
 		// Check if this CID is already pinned. We also filter on the name
@@ -103,29 +116,22 @@ func filterAlreadyPinned(ctx context.Context, client *pinning.Client, fileCids p
 		// are also pinning to this remote, then we don't want to step on each
 		// others' toes. We can't assume that a CID is pinned forever if
 		// another service may decide to unpin it later.
-		pins, errChan := client.Ls(
+		pins, err := client.LsSync(
 			ctx,
 			filterExistingPinStatus(),
 			pinning.PinOpts.FilterCIDs(currentCid),
 			pinning.PinOpts.FilterName(names.New(currentCid, names.FileKind)),
 			pinning.PinOpts.Limit(1), // It's possible to have multiple pins for the same CID.
 		)
+		if err != nil {
+			return nil, err
+		}
 
-		for {
-			select {
-			// Don't try to receive more than one element from the channel. We
-			// just need to know if there is *a* pin with this CID.
-			case _, cidIsPinned := <-oneshotChan(pins):
-				if !cidIsPinned {
-					cidsToPin = append(cidsToPin, currentCid)
-				}
-			case err := <-errChan:
-				if err == nil {
-					break
-				} else {
-					return nil, err
-				}
-			}
+		if len(pins) > 0 {
+			fmt.Println("IT'S PINNED")
+			cidsToPin = append(cidsToPin, currentCid)
+		} else {
+			fmt.Println("IT'S NOT PINNED")
 		}
 	}
 
