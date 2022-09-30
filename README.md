@@ -52,8 +52,9 @@ versions of artifacts.
 
 `pin` mode is useful for pinning content from the archive in bulk. This mode
 also creates a UnixFS directory containing links to the latest version of each
-file in each artifact in the repository. This mode is smart enough to skip any
-files already pinned in a previous run.
+file in each artifact in the repository, which acts as a sort of root directory
+for all the content in the archive. This mode is smart enough to skip any files
+already pinned in a previous run.
 
 Because IPFS uses content-based addressing, CIDs of files don't always
 necessarily point to the latest version of that file. To ensure that old links

@@ -77,7 +77,7 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("%w: %s", ErrInvalidMode, mode)
 		}
 
-		cidsInArtifacts, err := parse.ExtractCids(artifacts)
+		fileCids, err := parse.ExtractCids(artifacts)
 		if err != nil {
 			return err
 		}
@@ -96,12 +96,12 @@ var rootCmd = &cobra.Command{
 			rootCidStr := rootCid.String()
 			actionOutput.RootCid = &rootCidStr
 
-			if err := pin.Pin(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsInArtifacts); err != nil {
+			if err := pin.Pin(ctx, cfg.PinEndpoint(), cfg.PinToken(), fileCids, rootCid); err != nil {
 				return err
 			}
 		}
 
-		if err := output.Print(actionOutput, cidsInArtifacts); err != nil {
+		if err := output.Print(actionOutput, fileCids); err != nil {
 			return err
 		}
 
