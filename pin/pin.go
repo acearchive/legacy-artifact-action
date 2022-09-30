@@ -12,6 +12,7 @@ import (
 	"github.com/acearchive/artifact-action/cfg"
 	"github.com/acearchive/artifact-action/logger"
 	"github.com/acearchive/artifact-action/parse"
+	"github.com/acearchive/artifact-action/pin/names"
 	"github.com/ipfs/go-cid"
 )
 
@@ -52,19 +53,6 @@ func (m metaMap) Encode() (string, error) {
 	}
 
 	return string(bytes), nil
-}
-
-const (
-	baseMetaKey = "lgbt.acearchive.artifact-action"
-	kindMetaKey = "lgbt.acearchive.artifact-action.kind"
-)
-
-func rootMeta() metaMap {
-	return metaMap{baseMetaKey: "", kindMetaKey: "root"}
-}
-
-func fileMeta() metaMap {
-	return metaMap{baseMetaKey: "", kindMetaKey: "file"}
 }
 
 func addAuthHeader(request *http.Request, token string) {
@@ -170,6 +158,7 @@ type errorResponse struct {
 // The way that we have to go about this is wonky. As of time of writing,
 // paging is fundamentally broken in the pinning services API, both in terms of
 // the spec and in terms of common implementations. See this issue for details:
+//
 // https://github.com/ipfs/kubo/issues/8762
 //
 // Instead of using paging, we batch together a few CIDs and ask the service to
@@ -177,11 +166,11 @@ type errorResponse struct {
 // CID is already pinned. However, multiple pins can have the same CID, and
 // since we can't use paging, they all have to fit in one page.
 //
-// To address this problem, we tag pins which were created by this tool with
-// metadata, and we tell the service to only return pins with metadata
-// indicating they were made by this tool. Since this tool avoids re-pinning
-// files that have already been pinned, *theoretically* there should only ever
-// be one pin per CID given the filter parameters.
+// To address this problem, we use pin names to flag which of these pins were
+// created by this tool, and we tell the service to only return pins with
+// matching names. Since this tool avoids re-pinning files that have already
+// been pinned, *theoretically* there should only ever be one pin per CID given
+// the filter parameters.
 //
 // However, there's all sorts of ways this could break, such as race conditions
 // if two instances of this tool are pinning to the same service with the same
@@ -206,17 +195,13 @@ func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileC
 			}
 		}
 
-		metaParam, err := fileMeta().Encode()
-		if err != nil {
-			return nil, err
-		}
-
 		requestUrl := joinUrlPath(endpoint, "pins")
 		setQueryParams(&requestUrl, map[string]string{
 			"cid":    strings.Join(cidBatch, ","),
 			"status": "queued,pinning,pinned",
 			"limit":  pageLimit,
-			"meta":   metaParam,
+			"name":   names.FilesPrefix,
+			"match":  "partial",
 		})
 
 		request, err := http.NewRequestWithContext(ctx, http.MethodGet, requestUrl.String(), http.NoBody)
@@ -267,21 +252,21 @@ func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileC
 }
 
 type addPinRequest struct {
-	Cid  string  `json:"cid"`
-	Meta metaMap `json:"meta"`
+	Cid  string `json:"cid"`
+	Name string `json:"name"`
 }
 
 func (r addPinRequest) Encode() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-func addPin(ctx context.Context, endpoint url.URL, token string, pinCid cid.Cid, meta metaMap) error {
+func addPin(ctx context.Context, endpoint url.URL, token string, pinCid cid.Cid, name string) error {
 	if cfg.DryRun() {
 		return nil
 	}
 
 	requestUrl := joinUrlPath(endpoint, "pins")
-	body, err := addPinRequest{Cid: pinCid.String(), Meta: meta}.Encode()
+	body, err := addPinRequest{Cid: pinCid.String(), Name: name}.Encode()
 	if err != nil {
 		return err
 	}
@@ -322,14 +307,14 @@ func pinDeduplicated(ctx context.Context, endpoint url.URL, token string, fileCi
 	for currentIndex, currentCid := range filesToUpload {
 		logger.Printf("Pinning (%d/%d): %s\n", currentIndex+1, len(filesToUpload), currentCid.String())
 
-		if err := addPin(ctx, endpoint, token, currentCid, fileMeta()); err != nil {
+		if err := addPin(ctx, endpoint, token, currentCid, names.ForFile(currentCid)); err != nil {
 			return err
 		}
 	}
 
 	logger.Printf("\nPinning the root directory: /ipfs/%s\n", rootCid.String())
 
-	if err := addPin(ctx, endpoint, token, rootCid, rootMeta()); err != nil {
+	if err := addPin(ctx, endpoint, token, rootCid, names.ForRoot(rootCid)); err != nil {
 		return err
 	}
 
