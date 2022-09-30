@@ -1,6 +1,7 @@
 package pin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -37,9 +38,12 @@ const pageLimit = "200"
 // This can not be > 10 per the API spec.
 const batchLimit = 10
 
-const headerAuthorization = "Authorization"
+const (
+	headerAuthorization = "Authorization"
+	headerContentType   = "Content-Type"
+)
 
-type metaMap map[string]interface{}
+type metaMap map[string]string
 
 func (m metaMap) Encode() (string, error) {
 	bytes, err := json.Marshal(m)
@@ -50,15 +54,17 @@ func (m metaMap) Encode() (string, error) {
 	return string(bytes), nil
 }
 
-const baseMetaKey = "lgbt.acearchive.artifact-action"
-const kindMetaKey = "lgbt.acearchive.artifact-action.kind"
+const (
+	baseMetaKey = "lgbt.acearchive.artifact-action"
+	kindMetaKey = "lgbt.acearchive.artifact-action.kind"
+)
 
 func rootMeta() metaMap {
-	return map[string]interface{}{baseMetaKey: true, kindMetaKey: "root"}
+	return metaMap{baseMetaKey: "", kindMetaKey: "root"}
 }
 
 func fileMeta() metaMap {
-	return map[string]interface{}{baseMetaKey: true, kindMetaKey: "file"}
+	return metaMap{baseMetaKey: "", kindMetaKey: "file"}
 }
 
 func addAuthHeader(request *http.Request, token string) {
@@ -90,6 +96,53 @@ func setQueryParams(base *url.URL, params map[string]string) {
 	base.RawQuery = query.Encode()
 }
 
+type apiError struct {
+	Method  string
+	URL     *url.URL
+	Status  string
+	Reason  string
+	Details *string
+}
+
+func (e apiError) Error() string {
+	description := e.Reason
+
+	if e.Details != nil {
+		description += fmt.Sprintf("\n%s", *e.Details)
+	}
+
+	return fmt.Sprintf("Returned %s\n%s %s\n\n%s\n", e.Status, e.Method, e.URL.String(), description)
+}
+
+func checkResponseError(response *http.Response, goodStatusCodes ...int) error {
+	for _, statusCode := range goodStatusCodes {
+		if response.StatusCode == statusCode {
+			return nil
+		}
+	}
+
+	var responseObj errorResponse
+
+	if err := json.NewDecoder(response.Body).Decode(&responseObj); err != nil {
+		return apiError{
+			Method: response.Request.Method,
+			URL:    response.Request.URL,
+			Status: response.Status,
+			Reason: err.Error(),
+		}
+	}
+
+	response.Body.Close()
+
+	return apiError{
+		Method:  response.Request.Method,
+		URL:     response.Request.URL,
+		Status:  response.Status,
+		Reason:  responseObj.Error.Reason,
+		Details: responseObj.Error.Details,
+	}
+}
+
 type pinResponse struct {
 	Cid string `json:"cid"`
 }
@@ -100,6 +153,15 @@ type pinStatusResponse struct {
 
 type listPinsResponse struct {
 	Results []pinStatusResponse `json:"results"`
+}
+
+type errorReasonResponse struct {
+	Reason  string  `json:"reason"`
+	Details *string `json:"details"`
+}
+
+type errorResponse struct {
+	Error errorReasonResponse `json:"error"`
 }
 
 // listExistingPins returns the subset of the CIDs that have already been
@@ -169,6 +231,14 @@ func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileC
 			return nil, err
 		}
 
+		if response.StatusCode == http.StatusNotFound {
+			return existingContent, nil
+		}
+
+		if err := checkResponseError(response, http.StatusOK); err != nil {
+			return nil, err
+		}
+
 		var responseObj listPinsResponse
 
 		if err := json.NewDecoder(response.Body).Decode(&responseObj); err != nil {
@@ -196,31 +266,40 @@ func listExistingPins(ctx context.Context, endpoint url.URL, token string, fileC
 	return existingContent, nil
 }
 
+type addPinRequest struct {
+	Cid  string  `json:"cid"`
+	Meta metaMap `json:"meta"`
+}
+
+func (r addPinRequest) Encode() ([]byte, error) {
+	return json.Marshal(r)
+}
+
 func addPin(ctx context.Context, endpoint url.URL, token string, pinCid cid.Cid, meta metaMap) error {
 	if cfg.DryRun() {
 		return nil
 	}
 
-	metaParam, err := fileMeta().Encode()
+	requestUrl := joinUrlPath(endpoint, "pins")
+	body, err := addPinRequest{Cid: pinCid.String(), Meta: meta}.Encode()
 	if err != nil {
 		return err
 	}
 
-	requestUrl := joinUrlPath(endpoint, "pins")
-	setQueryParams(&requestUrl, map[string]string{
-		"cid":  pinCid.String(),
-		"meta": metaParam,
-	})
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, requestUrl.String(), http.NoBody)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, requestUrl.String(), bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
 
 	addAuthHeader(request, token)
+	request.Header.Add(headerContentType, "application/json")
 
 	response, err := getPinClient().Do(request)
 	if err != nil {
+		return err
+	}
+
+	if err := checkResponseError(response, http.StatusAccepted); err != nil {
 		return err
 	}
 
