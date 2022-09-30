@@ -10,7 +10,7 @@ import (
 	pinclient "github.com/ipfs/go-pinning-service-http-client"
 )
 
-func ListPins(ctx context.Context, endpoint, token string) (parse.ContentSet, error) {
+func listPins(ctx context.Context, endpoint, token string) (parse.ContentSet, error) {
 	client := pinclient.NewClient(endpoint, token)
 
 	existingPins, errChan := client.Ls(ctx, pinclient.PinOpts.FilterStatus(pinclient.StatusPinned))
@@ -30,18 +30,18 @@ func ListPins(ctx context.Context, endpoint, token string) (parse.ContentSet, er
 	return existingContent, nil
 }
 
-func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid, existingContent parse.ContentSet) error {
+func pinDeduplicated(ctx context.Context, endpoint, token string, allCids []cid.Cid, alreadyPinned parse.ContentSet) error {
 	client := pinclient.NewClient(endpoint, token)
 
-	filesToUpload := make([]cid.Cid, 0, len(cidList))
+	filesToUpload := make([]cid.Cid, 0, len(allCids))
 
-	for _, id := range cidList {
-		if _, alreadyUploaded := existingContent[parse.ContentKeyFromCid(id)]; !alreadyUploaded {
+	for _, id := range allCids {
+		if _, alreadyUploaded := alreadyPinned[parse.ContentKeyFromCid(id)]; !alreadyUploaded {
 			filesToUpload = append(filesToUpload, id)
 		}
 	}
 
-	logger.Printf("Skipping %d files that are already pinned\n", len(cidList)-len(filesToUpload))
+	logger.Printf("Skipping %d files that are already pinned\n", len(allCids)-len(filesToUpload))
 	logger.Printf("Pinning %d files\n", len(filesToUpload))
 
 	for currentIndex, currentCid := range filesToUpload {
@@ -57,11 +57,11 @@ func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid, existin
 	return nil
 }
 
-func PinDeduplicated(ctx context.Context, endpoint, token string, cidList []cid.Cid) error {
-	existingContent, err := ListPins(ctx, endpoint, token)
+func Pin(ctx context.Context, endpoint, token string, cidList []cid.Cid) error {
+	existingContent, err := listPins(ctx, endpoint, token)
 	if err != nil {
 		return err
 	}
 
-	return Pin(ctx, endpoint, token, cidList, existingContent)
+	return pinDeduplicated(ctx, endpoint, token, cidList, existingContent)
 }

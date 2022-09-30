@@ -2,19 +2,17 @@ package cfg
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 var (
-	ErrMissingIpfsAPI            = errors.New("in `upload` mode, you must supply the multiaddr of a running IPFS node")
-	ErrNotUploadMode             = errors.New("some of the given parameters are illegal when not in `upload` mode")
-	ErrMissingUploadParams       = errors.New("in `upload` mode, you must supply parameters to configure where to upload files to")
-	ErrMissingPinParams          = errors.New("to upload to a pinning service, you must provide both the endpoint URL and your secret token")
-	ErrOverloadedPinningServices = errors.New("you cannot upload to both Web3.Storage and a pinning service at the same time")
-	ErrW3SPinWithoutW3S          = errors.New("cannot use `w3s-pin` without `w3s-token`")
-	ErrInvalidOutput             = errors.New("this is not a valid output type; check the README")
-	ErrInvalidMode               = errors.New("this is not a valid mode; check the README")
+	ErrNotPinMode       = errors.New("these parameters are illegal when not pinning to IPFS")
+	ErrMissingPinParams = errors.New("missing mandatory parameters for pinning to IPFS")
+	ErrInvalidOutput    = errors.New("this is not a valid output type")
+	ErrInvalidMode      = errors.New("this is not a valid mode")
 )
 
 type OperatingMode string
@@ -22,13 +20,13 @@ type OperatingMode string
 const (
 	ModeValidate OperatingMode = "validate"
 	ModeHistory  OperatingMode = "history"
-	ModeUpload   OperatingMode = "upload"
+	ModePin      OperatingMode = "pin"
 )
 
 var allModes = map[OperatingMode]struct{}{
 	ModeValidate: {},
 	ModeHistory:  {},
-	ModeUpload:   {},
+	ModePin:      {},
 }
 
 type OutputType string
@@ -36,24 +34,16 @@ type OutputType string
 const (
 	OutputArtifacts OutputType = "artifacts"
 	OutputCids      OutputType = "cids"
-	OutputRootCid   OutputType = "root-cid"
+	OutputRoot      OutputType = "root"
 	OutputSummary   OutputType = ""
 )
 
 var allOutputs = map[OutputType]struct{}{
 	OutputArtifacts: {},
 	OutputCids:      {},
-	OutputRootCid:   {},
+	OutputRoot:      {},
 	OutputSummary:   {},
 }
-
-type UploadDestination string
-
-const (
-	UploadW3S  UploadDestination = "w3s"
-	UploadPin  UploadDestination = "pin"
-	UploadNone UploadDestination = "none"
-)
 
 const (
 	DefaultMode = ModeValidate
@@ -73,14 +63,6 @@ func init() {
 	}
 
 	if err := viper.BindEnv("path", "INPUT_PATH"); err != nil {
-		panic(err)
-	}
-
-	if err := viper.BindEnv("w3s-token", "INPUT_W3S-TOKEN"); err != nil {
-		panic(err)
-	}
-
-	if err := viper.BindEnv("w3s-pin", "INPUT_W3S-PIN"); err != nil {
 		panic(err)
 	}
 
@@ -113,14 +95,6 @@ func Path() string {
 	return viper.GetString("path")
 }
 
-func W3SToken() string {
-	return viper.GetString("w3s-token")
-}
-
-func W3SPin() bool {
-	return viper.GetBool("w3s-pin")
-}
-
 func IpfsAPI() string {
 	return viper.GetString("ipfs-api")
 }
@@ -145,48 +119,63 @@ func DryRun() bool {
 	return viper.GetBool("dry-run")
 }
 
-func Destination() UploadDestination {
-	if viper.GetString("w3s-token") != "" {
-		return UploadW3S
+func StringifyInput(input string) string {
+	if Action() {
+		return fmt.Sprintf("`%s`", input)
 	}
 
-	if viper.GetString("pin-endpoint") != "" && viper.GetString("pin-token") != "" {
-		return UploadPin
-	}
-
-	return UploadNone
+	return fmt.Sprintf("`--%s", input)
 }
 
 func ValidateParams() error {
 	if _, isValid := allOutputs[Output()]; !isValid {
-		return ErrInvalidOutput
+		return fmt.Errorf("%w: %s", ErrInvalidOutput, Output())
 	}
 
 	if _, isValid := allModes[Mode()]; !isValid {
-		return ErrInvalidMode
+		return fmt.Errorf("%w: %s", ErrInvalidMode, Mode())
 	}
 
-	isIpfsAPI := viper.GetString("ipfs-api") != ""
-	isW3SToken := viper.GetString("w3s-token") != ""
-	isW3SPin := viper.GetBool("w3s-pin")
-	isPinEndpoint := viper.GetString("pin-endpoint") != ""
-	isPinToken := viper.GetString("pin-token") != ""
+	hasIpfsAPI := viper.GetString("ipfs-api") != ""
+	hasPinEndpoint := viper.GetString("pin-endpoint") != ""
+	hasPinToken := viper.GetString("pin-token") != ""
+	hasAnyPinParams := hasIpfsAPI || hasPinEndpoint || hasPinToken
+	hasAllPinParams := hasIpfsAPI && hasPinEndpoint && hasPinToken
 
-	if Mode() == ModeUpload {
-		switch {
-		case !isIpfsAPI:
-			return ErrMissingIpfsAPI
-		case !(isW3SToken || isPinEndpoint || isPinToken):
-			return ErrMissingUploadParams
-		case isW3SToken && (isPinEndpoint || isPinToken):
-			return ErrOverloadedPinningServices
-		case isW3SPin && !isW3SToken:
-			return ErrW3SPinWithoutW3S
-		case isPinEndpoint != isPinToken:
-			return ErrMissingPinParams
+	if Mode() == ModePin && !hasAllPinParams {
+		missingParams := make([]string, 0, 3)
+
+		if !hasIpfsAPI {
+			missingParams = append(missingParams, StringifyInput("ipfs-api"))
 		}
-	} else if isIpfsAPI || isW3SToken || isW3SPin || isPinEndpoint || isPinToken {
-		return ErrNotUploadMode
+
+		if !hasPinEndpoint {
+			missingParams = append(missingParams, StringifyInput("pin-endpoint"))
+		}
+
+		if !hasPinToken {
+			missingParams = append(missingParams, StringifyInput("pin-token"))
+		}
+
+		return fmt.Errorf("%w: %s", ErrMissingPinParams, strings.Join(missingParams, ", "))
+	}
+
+	if Mode() != ModePin && hasAnyPinParams {
+		illegalParams := make([]string, 0, 3)
+
+		if hasIpfsAPI {
+			illegalParams = append(illegalParams, StringifyInput("ipfs-api"))
+		}
+
+		if hasPinEndpoint {
+			illegalParams = append(illegalParams, StringifyInput("pin-endpoint"))
+		}
+
+		if hasPinToken {
+			illegalParams = append(illegalParams, StringifyInput("pin-token"))
+		}
+
+		return fmt.Errorf("%w: %s", ErrNotPinMode, strings.Join(illegalParams, ", "))
 	}
 
 	return nil

@@ -11,8 +11,6 @@ import (
 	"github.com/acearchive/artifact-action/output"
 	"github.com/acearchive/artifact-action/parse"
 	"github.com/acearchive/artifact-action/pin"
-	"github.com/acearchive/artifact-action/w3s"
-	"github.com/ipfs/go-cid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -21,14 +19,12 @@ var ErrInvalidMode = errors.New("invalid mode parameter")
 
 func init() {
 	rootCmd.Flags().StringP("repo", "r", ".", "The `path` of the git repo containing the artifact files")
-	rootCmd.Flags().StringP("mode", "m", string(cfg.DefaultMode), "The mode to operate in, either \"validate\", \"history\", or \"upload\"")
+	rootCmd.Flags().StringP("mode", "m", string(cfg.DefaultMode), "The mode to operate in")
 	rootCmd.Flags().String("path", cfg.DefaultPath, "The `path` of the artifact files in the repository")
-	rootCmd.Flags().String("w3s-token", "", "The secret API `token` for Web3.Storage")
-	rootCmd.Flags().Bool("w3s-pin", false, "Use the pinning service provided by Web3.Storage")
 	rootCmd.Flags().String("ipfs-api", "", "The `multiaddr` of your IPFS node")
 	rootCmd.Flags().String("pin-endpoint", "", "The `url` of the IPFS pinning service API endpoint to use")
 	rootCmd.Flags().String("pin-token", "", "The secret bearer `token` for the configured IPFS pinning service")
-	rootCmd.Flags().StringP("output", "o", "", "Print the given output to stdout instead of summary statistics")
+	rootCmd.Flags().StringP("output", "o", "", "Print the given output type to stdout instead of summary statistics")
 	rootCmd.Flags().Bool("dry-run", false, "Prevents uploading files when used in upload mode")
 	rootCmd.Flags().Bool("action", false, "Run this tool as a GitHub Action")
 
@@ -54,10 +50,10 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfg.DryRun() {
-			if cfg.Mode() == cfg.ModeUpload {
+			if cfg.Mode() == cfg.ModePin {
 				logger.LogNotice("This is a dry run. No files will actually be uploaded.")
 			} else {
-				logger.LogWarning("Using the `dry-run` option is pointless when not in `upload` mode.")
+				logger.LogWarning(fmt.Sprintf("Using the %s option is pointless when not in `upload` mode.", cfg.StringifyInput("dry-run")))
 			}
 		}
 
@@ -72,7 +68,7 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		case cfg.ModeHistory, cfg.ModeUpload:
+		case cfg.ModeHistory, cfg.ModePin:
 			artifacts, err = parse.History(cfg.Repo(), cfg.Path())
 			if err != nil {
 				return err
@@ -91,7 +87,7 @@ var rootCmd = &cobra.Command{
 			RootCid:   nil,
 		}
 
-		if cfg.Mode() == cfg.ModeUpload {
+		if cfg.Mode() == cfg.ModePin {
 			rootCid, err := dir.Build(ctx, artifacts)
 			if err != nil {
 				return err
@@ -100,20 +96,8 @@ var rootCmd = &cobra.Command{
 			rootCidStr := rootCid.String()
 			actionOutput.RootCid = &rootCidStr
 
-			switch cfg.Destination() {
-			case cfg.UploadW3S:
-				if err := w3s.Upload(ctx, cfg.W3SToken(), cidsInArtifacts, rootCid); err != nil {
-					return err
-				}
-			case cfg.UploadPin:
-				cidsToUpload := make([]cid.Cid, len(cidsInArtifacts), len(cidsInArtifacts)+1)
-				copy(cidsToUpload, cidsInArtifacts)
-				cidsToUpload = append(cidsToUpload, rootCid)
-
-				if err := pin.PinDeduplicated(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsToUpload); err != nil {
-					return err
-				}
-			case cfg.UploadNone:
+			if err := pin.Pin(ctx, cfg.PinEndpoint(), cfg.PinToken(), cidsInArtifacts); err != nil {
+				return err
 			}
 		}
 
@@ -121,7 +105,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		if cfg.DryRun() && cfg.Mode() == cfg.ModeUpload {
+		if cfg.DryRun() && cfg.Mode() == cfg.ModePin {
 			logger.LogNotice("This was a dry run. No files were actually uploaded.")
 		}
 

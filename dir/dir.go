@@ -72,6 +72,8 @@ func getLatestFiles(artifacts []parse.Artifact) artifactMapType {
 	return artifactMap
 }
 
+// Build builds a directory containing the most recent file with a given file
+// name in each artifact.
 func Build(ctx context.Context, artifacts []parse.Artifact) (cid.Cid, error) {
 	ipfsClientGuard, err := client.New()
 	if err != nil {

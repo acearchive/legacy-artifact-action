@@ -1,7 +1,7 @@
 name: "Ace Archive Artifact Action"
 author: "Ace Archive"
 description: >
-  Query, validate, and rehost artifacts in Ace Archive.
+  Query, validate, and pin artifacts from Ace Archive.
 inputs:
   path:
     description: >
@@ -11,41 +11,29 @@ inputs:
     default: "artifacts/"
   mode:
     description: >
-      The mode to operate in, either `validate`, `history`, or `upload`. See
-      the README for details.
+      The mode to operate in, either `validate`, `history`, or `pin`. See the
+      README for details.
     required: true
     default: "validate"
   ipfs-api:
     description: >
       The multiaddr of the API endpoint of the running IPFS node. This is
-      required to upload artifacts to Web3.Storage or an IPFS pinning service.
+      required in `pin` mode.
     required: false
-  w3s-token:
-    description: >
-      The secret API token for Web3.Storage. If this is provided, all artifacts
-      in the repository are uploaded to Web3.Storage.
-    required: false
-  w3s-pin:
-    description: >
-      If this is `true`, then the Web3.Storage pinning service API will be used
-      in addition to their CAR upload endpoint for improved performance.
-    required: true
-    default: "false"
   pin-endpoint:
     description: >
-      The URL of the IPFS pinning service API endpoint to use. If this is
-      provided, all artifacts in the repository are pinned using this pinning
-      service.
+      The URL of the IPFS pinning service API endpoint to use. This is required
+      in `pin` mode.
     required: false
   pin-token:
     description: >
       The secret bearer token for the configured IPFS pinning service. This is
-      required to pin artifacts using an IPFS pinning service.
+      required in `pin` mode.
     required: false
   dry-run:
     description: >
-      Prevents uploading files when used in `upload` mode. Legal in other
-      modes, but does nothing. Useful for testing.
+      Prevents uploading files when used in `pin` mode. Legal in other modes,
+      but does nothing. Useful for testing.
     required: false
 outputs:
   artifacts:
@@ -55,7 +43,7 @@ outputs:
     description: >
       A JSON array of the CIDs contained in artifacts in the repository,
       deduplicated by their multihash.
-  root-cid:
+  root:
     description: >
       The CID of the UnixFS directory containing the current version of each
       file in the repository.
