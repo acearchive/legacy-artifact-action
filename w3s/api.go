@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -58,6 +59,34 @@ func requestUploads(ctx context.Context, token string, before time.Time) ([]w3sS
 	}
 
 	return page, nil
+}
+
+// uploadPartialDAG uploads a CAR using the raw HTTP API instead of the client
+// library. Crucially, this does not split CARs using carbites like the client
+// library does, which you need to do to keep large files below the 100MB API
+// limit. However, the way splitting CARs is implemented in the W3S client
+// library currently doesn't play well with partial DAGs, which we use to
+// upload the root directory without sending duplicate data.
+func uploadPartialDAG(ctx context.Context, token string, car io.ReadCloser) error {
+	requestURL := "https://api.web3.storage/car"
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, car)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("%w: %d", ErrHTTPStatus, res.StatusCode)
+	}
+
+	return res.Body.Close()
 }
 
 func listExistingCids(ctx context.Context, token string) (parse.ContentSet, error) {

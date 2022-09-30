@@ -14,6 +14,11 @@ import (
 
 const w3sPinApiEndpoint = "https://api.web3.storage"
 
+// uploadWithoutPinning uses the W3S client library to upload files by wrapping
+// them in a CAR archive. Since files submitted to Ace Archive via CID will
+// already be on the IPFS network, this is less efficient than using the
+// pinning API because we need to download each file over the IPFS network,
+// pack it into a CAR locally, and then reupload it.
 func uploadWithoutPinning(ctx context.Context, token string, w3sClient w3s.Client, ipfsClientGuard *client.Guard, cidList []cid.Cid, existingContent parse.ContentSet) error {
 	ipfsClient := ipfsClientGuard.Lock()
 	defer ipfsClientGuard.Unlock()
@@ -82,13 +87,13 @@ func Upload(ctx context.Context, token string, cidList []cid.Cid, directoryCid c
 
 	logger.Println("Uploading root directory as a partial DAG.")
 
-	car, err := PackPartialCar(ctx, ipfsClient, directoryCid, existingContent)
+	car, err := PackPartialCar(ctx, ipfsClient, directoryCid)
 	if err != nil {
 		return err
 	}
 
 	if !cfg.DryRun() {
-		if _, err := w3sClient.PutCar(ctx, car); err != nil {
+		if err := uploadPartialDAG(ctx, token, car); err != nil {
 			return err
 		}
 	}

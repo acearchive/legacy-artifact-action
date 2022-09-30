@@ -98,7 +98,8 @@ be uploaded to Web3.Storage.
 If this is `true`, then the Web3.Storage pinning service API will be used in
 addition to their CAR upload endpoint for improved performance. Only enable
 this if your Web3.Storage account has access to their pinning service API,
-which is in closed beta at time of writing.
+which is in closed beta at time of writing. If your account supports this
+feature, then enabling it will likely improve performance.
 
 This option is only valid in `upload` mode when `w3s-token` is set.
 
@@ -106,6 +107,9 @@ This option is only valid in `upload` mode when `w3s-token` is set.
 
 The URL of the IPFS pinning service API endpoint to use. In `upload` mode, this
 causes files to be pinned with the configured pinning service.
+
+If you're using the Web3.Storage pinning service API, you should use
+`--w3s-token` with `--w3s-pin` instead of `--pin-endpoint` and `--pin-token`.
 
 ### `pin-token`
 
