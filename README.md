@@ -1,3 +1,13 @@
+![Unmaintained](https://img.shields.io/badge/unmaintained-%F0%9F%9B%87-red?style=for-the-badge)
+
+**DEPRECATED**
+
+*This repo has been deprecated now that we are no longer using IPFS for hosting
+content. The documentation below is no longer accurate. See
+[artifact-submit-action](https://github.com/acearchive/artifact-submit-action)
+and [hugo-artifact-action](https://github.com/acearchive/hugo-artifact-action)
+instead.*
+
 # artifact-action
 
 This is a GitHub Action and CLI tool which provides tooling for working with
